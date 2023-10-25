@@ -21,7 +21,7 @@
 golem::fill_desc(
   pkg_name = "suiviCollecte", # The Name of the package containing the App
   pkg_title = "Suivi de la collecte ESEA", # The Title of the package containing the App
-  pkg_description = "Site web de suivi de la collecte de l'enquête ESEA", # The Description of the package containing the App
+  pkg_description = "Site web de suivi de la collecte de l'enquête ESEA.", # The Description of the package containing the App
   author_first_name = "Anaël", # Your First Name
   author_last_name = "Delorme", # Your Last Name
   author_email = "anael.delorme@agriculture.gouv.Fr", # Your Email
