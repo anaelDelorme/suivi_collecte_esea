@@ -20,7 +20,7 @@ app_ui <- function(request) {
         # Titre du header qui se met en haut à gauche du site
         title = "Suivi collecte ESEA",
         # Couleur du header --> choix de couleurs dans le help de bs4Dash : ?bs4Dash::dashboardHeader
-        status = "purple",
+        status = "primary",
         # logo à gauche du header qui permet d'ouvrir et fermer le menu latéral
         # possibilité d'utiliser les logos de bootstrap : https://fontawesome.com/icons ou https://getbootstrap.com/docs/3.3/components/#glyphicons
         sidebarIcon = shiny::icon("tractor")
@@ -28,7 +28,7 @@ app_ui <- function(request) {
       # Création du menu latéral
       sidebar = bs4Dash::dashboardSidebar(
         # Couleur du menu latéral
-        status = "purple",
+        status = "primary",
         # id à laisser
         id = "sidebar",
         # ajout de la liste des liens dans le menu

@@ -10,7 +10,7 @@
 mod_suivi_collecte_ui <- function(id){
   ns <- NS(id)
   tagList(
- 
+
   )
 }
     
