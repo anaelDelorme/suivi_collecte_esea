@@ -1,10 +1,15 @@
 Package: suiviCollecte
 Title: Suivi de la collecte ESEA
 Version: 0.0.0.9000
-Authors@R: person('Anaël', 'Delorme', email = 'anael.delorme@agriculture.gouv.Fr', role = c('cre', 'aut'))
+Authors@R: 
+    person("Anaël", "Delorme", , "anael.delorme@agriculture.gouv.Fr", role = c("cre", "aut"))
 Description: Site web de suivi de la collecte de l'enquête ESEA.
 License: MIT + file LICENSE
+URL: https://github.com/anaelDelorme/suivi_collecte_esea
+BugReports: https://github.com/anaelDelorme/suivi_collecte_esea/issues
 Imports: 
+    arrow,
+    aws.s3,
     bs4Dash,
     config,
     golem,
@@ -21,5 +26,3 @@ Encoding: UTF-8
 Language: en-US
 LazyData: true
 RoxygenNote: 7.2.3
-URL: https://github.com/anaelDelorme/suivi_collecte_esea
-BugReports: https://github.com/anaelDelorme/suivi_collecte_esea/issues
