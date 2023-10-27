@@ -12,8 +12,20 @@ Imports:
     aws.s3,
     bs4Dash,
     config,
+    dplyr,
+    DT,
+    echarts4r,
+    geojsonio,
+    glue,
     golem,
-    shiny
+    grDevices,
+    htmlwidgets,
+    leaflet,
+    shiny,
+    shinymanager,
+    shinyWidgets,
+    tidyr,
+    waiter
 Suggests: 
     knitr,
     rmarkdown,

@@ -16,6 +16,9 @@
 #' @import echarts4r
 #' @importFrom grDevices col2rgb colors rgb
 #' @import leaflet
+#' @import DT
+#' @import shinymanager
+
 
 ### Load data ###
 #  data_suivi <- aws.s3::s3read_using(
@@ -43,6 +46,14 @@ mod_suivi_collecte_ui <- function(id){
       bs4Dash::box(
           title = "Avancement de la collecte",
           status = "indigo",
+          shinyWidgets::awesomeRadio(
+            inputId = ns("map_choice_region_departement"),
+            label = NULL, 
+            choices = c("Région", "Département"),
+            selected = "Région",
+            inline = TRUE,
+            status = "success"
+          ),
           leafletOutput(ns("map_taux_collecte"))
       )
     )    
@@ -115,25 +126,44 @@ mod_suivi_collecte_server <- function(id, r){
          e_tooltip(formatter = htmlwidgets::JS("function(params) {return params.name + ': ' + params.value;}"))
     })
 
+    
     ### Carte taux de collecte par département ou région
+    data_map_taux_collecte <- reactive({
+      if (input$map_choice_region_departement == "Département") {
+        suivi_par_departement <- r$data_suivi %>%
+          mutate(collecte = ifelse(ETAT_CONTROLE == 1 , "Non collecté", 'Collecté')) %>%
+          group_by(collecte, REP_CODE_DEPT_1) %>%
+          count() %>%
+          pivot_wider(names_from = collecte, values_from = n,  values_fill = 0) %>%
+          filter(!is.na(REP_CODE_DEPT_1)) %>%
+          mutate(total = Collecté + `Non collecté`) %>%
+          mutate(taux_collecte = Collecté/total) 
 
-    output$map_taux_collecte <- renderLeaflet({
+        data_map_taux_collecte <- r$map_departements %>%
+          left_join(suivi_par_departement, by = c("DEP" = "REP_CODE_DEPT_1")) %>%
+          rename(Name = Nom)
+      }
+      else{
         suivi_par_region <- r$data_suivi %>%
           mutate(collecte = ifelse(ETAT_CONTROLE == 1 , "Non collecté", 'Collecté')) %>%
           group_by(collecte, REP_CODE_REG_1) %>%
           count() %>%
           pivot_wider(names_from = collecte, values_from = n,  values_fill = 0) %>%
           filter(!is.na(REP_CODE_REG_1)) %>%
-
           mutate(total = Collecté + `Non collecté`) %>%
-          mutate(taux_collecte = Collecté/total)
+          mutate(taux_collecte = Collecté/total) 
 
-        data_map <- r$map_regions %>%
+        data_map_taux_collecte <- r$map_regions %>%
           left_join(suivi_par_region, by = c("REG" = "REP_CODE_REG_1"))
+      }
+      list(df = data_map_taux_collecte)
+    })
+    
+    pal <- colorNumeric("RdYlGn", NULL)
 
-        pal <- colorNumeric("RdYlGn", NULL)
-
-        leaflet::leaflet(data_map) %>%
+    output$map_taux_collecte <- renderLeaflet({
+        data_taux_collecte <- data_map_taux_collecte()$df
+        leaflet::leaflet(data_taux_collecte) %>%
           addPolygons(stroke = FALSE, 
               smoothFactor = 0.3, 
               fillOpacity = 1,
@@ -143,8 +173,6 @@ mod_suivi_collecte_server <- function(id, r){
                               " % / ",Collecté," collectés pour ", total," au total.")) %>%
               addLegend(pal = pal, values = ~round(100*taux_collecte,0), title = "Taux de collecte",
                     opacity = 1, position = "bottomright", na.label= "?",labFormat = labelFormat(suffix=" %"))
-
-
     })
 
   })
