@@ -1,30 +1,41 @@
+name: Dockerize
 
-# Base image
-FROM rocker/shiny:4.1.2
+on:
+  push:
+    tags:
+      - "*"
+    branches:
+      - main
 
-# Install required linux librairies
-RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends libpq-dev \
-                                               libssl-dev \
-                                               libxml2-dev \
-                                               gdal-bin \
-                                               libgdal-dev \
-                                               libjq-dev \
-                                               libudunits2-dev 
-
-RUN R -e "install.packages('shiny', repos='https://cran.rstudio.com/')"
-RUN R -e "install.packages('golem', repos='https://cran.rstudio.com/')"
-
-# Install R package and its dependencies
-RUN install2.r remotes
-COPY suiviCollecte/ ./suiviCollecte
-RUN Rscript -e 'remotes::install_deps("./suiviCollecte")'
-RUN Rscript -e 'install.packages("./suiviCollecte", repos = NULL, type="source")'
-
-# Expose port where shiny app will broadcast
-ARG SHINY_PORT=3838
-EXPOSE $SHINY_PORT
-RUN echo "local({options(shiny.port = ${SHINY_PORT}, shiny.host = '0.0.0.0')})" >> /usr/local/lib/R/etc/Rprofile.site
-
-# Endpoint
-CMD ["Rscript", "-e", "suiviCollecte::run_app()"]
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Docker meta
+        id: docker_meta
+        uses: docker/metadata-action@v3
+        with:
+          images: anaeldelorme/suivicollecteexf
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to DockerHub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ steps.docker_meta.outputs.tags }}
+            ${{ github.ref == 'refs/heads/main' && 'anaeldelorme/suivicollecteesea:latest' || '' }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
