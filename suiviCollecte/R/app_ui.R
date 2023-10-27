@@ -44,7 +44,15 @@ app_ui <- function(request) {
           bs4Dash::menuItem("Liste des dossiers", tabName = "listeDossiers", icon = icon("list"))
 
         ),
-        img(src = app_sys("logo_tfc.png"))
+        #img(src = "www/logo_tfc.png", width = 40, height = 40)
+        tags$style(HTML(".centered-image { display: flex; justify-content: center; align-items: center; }")),
+        br(),
+
+          fluidRow(
+            column(width = 12, div(class = "centered-image",
+              img(src = "www/logo_tfc.png", width = 80, height = 80)
+            ))
+          )
       ),
       # Ajout du body
       body = bs4Dash::dashboardBody(
