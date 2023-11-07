@@ -40,5 +40,7 @@ app_server <- function(input, output, session) {
   
 
   mod_suivi_collecte_server("suivi_collecte_1",r)
-  mod_liste_dossier_server("liste_dossier_1",r)
+  mod_suivi_accept_server("suivi_accept_1",r)
+  mod_suivi_etat_server("suivi_etat_1",r)
+  mod_suivi_validation_srise_server("suivi_validation_srise_1",r)
 }

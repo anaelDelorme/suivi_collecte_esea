@@ -1,4 +1,4 @@
-#' suivi_collecte UI Function
+#' suivi_accept UI Function
 #'
 #' @description A shiny Module.
 #'
@@ -6,23 +6,8 @@
 #'
 #' @noRd 
 #'
-#' @importFrom shiny NS tagList verbatimTextOutput h1 renderPrint
-#' @importFrom aws.s3 s3read_using
-#' @importFrom arrow read_parquet
-#' @import glue
-#' @import dplyr
-#' @import tidyr
-#' @import bs4Dash
-#' @import echarts4r
-#' @importFrom grDevices col2rgb colors rgb
-#' @import leaflet
-#' @import DT
-#' @import shinymanager
-#' @import stringr
-#' @import shinyWidgets
-
-
-mod_suivi_collecte_ui <- function(id){
+#' @importFrom shiny NS tagList 
+mod_suivi_accept_ui <- function(id){
   ns <- NS(id)
   tagList(
     fluidRow(
@@ -30,6 +15,41 @@ mod_suivi_collecte_ui <- function(id){
           valueBoxOutput(ns("taux_collecte")),
           valueBoxOutput(ns("taux_reponse"))
         ),
+    fluidRow(
+      bs4Dash::box(
+          title = "Avancement de la collecte",
+          status = "orange",
+          echarts4rOutput(ns("pie_questionnaire_par_etat"))
+      ),
+      bs4Dash::box(
+          title = "Questionnaires collectés",
+          status = "orange",
+          pickerInput(
+            inputId = ns("departement_picker"),
+            label = NULL, 
+            choices = NULL,
+            options = list(
+              style = "btn-warning"
+            )
+          ),
+          echarts4rOutput(ns("suivi_remontee_temps"))
+      )),
+    fluidRow(
+  style = "background-color: #343a40;",
+  column(
+    width = 12,
+    h4("Vue régionale", style = "color: white"),
+    pickerInput(
+      inputId = ns("region_picker"),
+      label = NULL,
+      choices = NULL,
+      options = list(
+        style = "btn"
+      )
+    )
+  )
+)
+,
     fluidRow(
       bs4Dash::box(
           title = "Avancement de la collecte",
@@ -43,30 +63,15 @@ mod_suivi_collecte_ui <- function(id){
             status = "success"
           ),
           leafletOutput(ns("map_taux_collecte"))
-      ),
-      bs4Dash::box(
-          title = "Questionnaires collectés",
-          status = "orange",
-          pickerInput(
-            inputId = ns("region_picker"),
-            label = NULL,
-            choices = NULL,
-            options = list(
-              style = "btn-warning"
-            )
-          ),
-          echarts4rOutput(ns("suivi_remontee_temps"))
-      )),
-    fluidRow(
-      
+      )
     )    
   )
 }
     
-#' suivi_collecte Server Functions
+#' suivi_accept Server Functions
 #'
 #' @noRd 
-mod_suivi_collecte_server <- function(id, r){
+mod_suivi_accept_server <- function(id, r){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
 
@@ -75,8 +80,24 @@ mod_suivi_collecte_server <- function(id, r){
         nom_region <- c("France", unique(r$data_suivi %>% pull(REP_LIB_REG_1)))
         nom_region <- stringr::str_to_title(nom_region)
         updatePickerInput(session, inputId = "region_picker", choices = nom_region)    
+
+        nom_departement <- c("Tous", unique(r$data_suivi %>% pull(REP_LIB_DEPT_1)))
+          nom_departement <- stringr::str_to_title(nom_departement)
+          updatePickerInput(session, inputId = "departement_picker", choices = nom_departement)
     })
 
+
+    observeEvent(input$region_picker,
+    {
+      nom_region <- c("France", unique(r$data_suivi %>% pull(REP_LIB_REG_1)))
+        nom_region <- stringr::str_to_title(nom_region)
+      updatePickerInput(session, inputId = "region_picker", choices = nom_region, selected = input$region_picker) 
+          nom_departement <- c("Tous", unique(r$data_suivi %>% 
+                                            filter(REP_LIB_REG_1 == stringr::str_to_upper(input$region_picker)) %>% 
+                                            pull(REP_LIB_DEPT_1)))
+          nom_departement <- stringr::str_to_title(nom_departement)
+          updatePickerInput(session, inputId = "departement_picker", choices = nom_departement)
+      })
 
     #### Indicateurs
     observe({
@@ -115,67 +136,65 @@ mod_suivi_collecte_server <- function(id, r){
 
     })
 
+    #### Nombre de questionnaires par état
+    output$pie_questionnaire_par_etat <- renderEcharts4r({
+       dossier <- r$data_suivi
+       questionnaire_par_etat <- dossier %>%
+         count(ETAT_CONTROLE) %>%
+         mutate(
+          ETAT_CONTROLE = case_when(
+            ETAT_CONTROLE == 1 ~ "Non collecté",
+            ETAT_CONTROLE == 5 ~ "Validé",
+            ETAT_CONTROLE == 4 ~ "A confirmer",
+            ETAT_CONTROLE == 2 ~ "A compléter",
+            ETAT_CONTROLE == 3 ~ "A corriger",
+            TRUE ~ "Indéterminé"
+          )
+         )
+
+       questionnaire_par_etat %>%
+        e_charts(ETAT_CONTROLE) %>%
+        e_pie(n, radius = c("40%", "70%")) |>
+         e_tooltip(formatter = htmlwidgets::JS("function(params) {return params.name + ': ' + params.value;}"))
+    })
 
     #### Suivi dans le temps des questionnaires remontés
       output$suivi_remontee_temps <- renderEcharts4r({
         
-if (is.null(input$region_picker) || input$region_picker == "France"){
-  questionnaire_par_jour_grp <- questionnaire_par_jour %>% 
-    group_by(REP_LIB_REG_1) %>% 
-    count(jour_remontee) %>%
-    pivot_wider(names_from = REP_LIB_REG_1, values_from = n, values_fill =0) %>% 
-    arrange(jour_remontee) %>%
-    mutate(across(where(is.numeric), ~ cumsum(.))) %>% 
-    janitor::adorn_totals("col", name="France")
-  
-  nb_jour_collecte = as.Date(as.POSIXct("2024-03-01", format = "%Y-%m-%d")) - as.Date(as.POSIXct("2023-10-03" , format = "%Y-%m-%d"))
-  questionnaire_a_collecter_chaque_jour <- nrow(suivi_init) /as.numeric(nb_jour_collecte)
-  
-  questionnaire_par_jour_grp <- questionnaire_par_jour_grp %>% 
-    mutate(nb_jours = as.numeric(as.Date(as.POSIXct(jour_remontee, format = "%Y-%m-%d")) - as.Date(as.POSIXct("2023-10-03" , format = "%Y-%m-%d")))) %>% 
-    mutate(estimation = nb_jours * questionnaire_a_collecter_chaque_jour) %>% 
-    select(-nb_jours) %>% 
-    rename("Trajectoire estimée" = estimation)
-}else{
-  questionnaire_par_jour_grp <- questionnaire_par_jour %>% 
-    filter(REP_LIB_REG_1 == input$region_picker) %>% 
-    group_by(REP_LIB_DEPT_1) %>% 
-    count(jour_remontee) %>%
-    pivot_wider(names_from = REP_LIB_DEPT_1, values_from = n, values_fill =0) %>% 
-    arrange(jour_remontee) %>%
-    mutate(across(where(is.numeric), ~ cumsum(.))) %>% 
-    janitor::adorn_totals("col", name="France") %>% 
-    select(-France)
-}
+        if(is.null(input$region_picker) || input$region_picker == "France"){
+            suivi_init <- r$data_suivi
+        }else if (input$departement_picker== "Tous"  ) {
+           suivi_init <- r$data_suivi %>%
+                      filter(REP_LIB_REG_1 == stringr::str_to_upper(input$region_picker))
+        }else{
+          suivi_init <- r$data_suivi %>%
+                      filter(REP_LIB_DEPT_1 == stringr::str_to_upper(input$departement_picker))
+        }
 
-p <- questionnaire_par_jour_grp %>%
-  echarts4r::e_charts(jour_remontee, height = "900px") 
- 
-for (col_name in colnames(questionnaire_par_jour_grp %>%  select(-jour_remontee))) {
-  print(col_name)
-  p <- p %>% e_line_(col_name)
-}
-p <- p %>%
-  echarts4r::e_x_axis(type = "time",
-                      axisLabel = list(
-                        type = "time",
-                        formatter =  htmlwidgets::JS(
-                          'function(value){
-              // convert to date format
-              let date = new Date(value);
+      questionnaire_par_jour <- suivi_init   %>%
+          select(NOM_DOSSIER, DATE_REMONTEE) %>%
+          mutate(jour_remontee = as.Date(as.POSIXct(DATE_REMONTEE, format = "%Y-%m-%d %H:%M:%OS"))) %>%
+          filter(!is.na(jour_remontee)) %>%
+          count(jour_remontee) %>%
+          arrange(jour_remontee) %>%
+          mutate(cum_nb_questionnaire = cumsum(n)) 
 
-              label = date.getDate() + "-" + (parseInt(date.getMonth()) + 1) + "-" + date.getFullYear();
-              return label;
-            }'
-                        )
-                      )) %>%
-  echarts4r::e_tooltip(formatter = htmlwidgets::JS(
-    "function(params) {return params.value[0] + ' : ' + params.value[1];}"
-  )) %>%
-  echarts4r::e_title("") %>%
-  echarts4r::e_y_axis(name = "Questionnaires remontés")
+      nb_jour_collecte = as.Date(as.POSIXct("2024-03-01", format = "%Y-%m-%d")) - as.Date(as.POSIXct("2023-10-03" , format = "%Y-%m-%d"))
+      questionnaire_a_collecter_chaque_jour <- nrow(suivi_init) /as.numeric(nb_jour_collecte)
 
-p
+      questionnaire_par_jour <- questionnaire_par_jour %>% 
+        mutate(nb_jours = as.numeric(as.Date(as.POSIXct(jour_remontee, format = "%Y-%m-%d")) - as.Date(as.POSIXct("2023-10-03" , format = "%Y-%m-%d")))) %>% 
+        mutate(estimation = nb_jours * questionnaire_a_collecter_chaque_jour) 
+
+    questionnaire_par_jour %>%
+      e_charts(jour_remontee, height = "900px") %>%
+      e_line(cum_nb_questionnaire, name = "Cumulé") %>%
+      e_line(estimation, name = "Trajectoire estimée") %>%
+      e_bar(n, name = "Par jour") %>%
+      e_x_axis(type = "time", boundary_gap = 0) %>%
+      e_tooltip(formatter = htmlwidgets::JS("function(params) {return params.value[0] + ' : ' + params.value[1];}")) %>%
+      e_title("") %>%
+      e_y_axis(name = "Questionnaires remontés")
 
   })
 
@@ -232,7 +251,7 @@ p
 }
     
 ## To be copied in the UI
-# mod_suivi_collecte_ui("suivi_collecte_1")
+# mod_suivi_accept_ui("suivi_accept_1")
     
 ## To be copied in the server
-# mod_suivi_collecte_server("suivi_collecte_1")
+# mod_suivi_accept_server("suivi_accept_1")

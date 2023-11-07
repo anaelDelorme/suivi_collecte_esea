@@ -21,7 +21,9 @@ attachment::att_amend_desc()
 ## Add modules ----
 ## Create a module infrastructure in R/
 golem::add_module(name = "suivi_collecte", with_test = TRUE) # Name of the module
-golem::add_module(name = "liste_dossier", with_test = TRUE) # Name of the module
+golem::add_module(name = "suivi_accept", with_test = TRUE) # Name of the module
+golem::add_module(name = "suivi_etat", with_test = TRUE) # Name of the module
+golem::add_module(name = "suivi_validation_srise", with_test = TRUE) # Name of the module
 
 ## Add helper functions ----
 ## Creates fct_* and utils_*

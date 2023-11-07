@@ -41,8 +41,9 @@ app_ui <- function(request) {
           # le tabName qui fait le lien avec l'affichage dans le body
           # le logo
           bs4Dash::menuItem("Suivi Collecte", tabName = "suiviCollecte", icon = icon("globe")),
-          bs4Dash::menuItem("Liste des dossiers", tabName = "listeDossiers", icon = icon("list"))
-
+          bs4Dash::menuItem("Suivi Accept", tabName = "suiviAccept", icon = icon("square-check")),
+          bs4Dash::menuItem("Suivi Etat", tabName = "suiviEtat", icon = icon("list-check")),
+          bs4Dash::menuItem("Suivi Validation Srise", tabName = "suiviValidationSrise", icon = icon("check"))
         ),
         #img(src = "www/logo_tfc.png", width = 40, height = 40)
         tags$style(HTML(".centered-image { display: flex; justify-content: center; align-items: center; }")),
@@ -61,7 +62,10 @@ app_ui <- function(request) {
           # pour chaque page on met un tabItem avec le nom du tabName du menuItem
           # et la fonction d'affchage de la page (cette fonction est expliquée dans la suite : Ajouter des modules)
           bs4Dash::tabItem("suiviCollecte", mod_suivi_collecte_ui("suivi_collecte_1")),
-          bs4Dash::tabItem("listeDossiers", mod_liste_dossier_ui("liste_dossier_1"))
+          bs4Dash::tabItem("suiviAccept", mod_suivi_accept_ui("suivi_accept_1")),
+          bs4Dash::tabItem("suiviEtat", mod_suivi_etat_ui("suivi_etat_1")),
+          bs4Dash::tabItem("suiviValidationSrise", mod_suivi_validation_srise_ui("suivi_validation_srise_1"))
+
         )
       ),
       # Ajout d'un footer avec un texte à gauche et à droite dans cet exemple.
