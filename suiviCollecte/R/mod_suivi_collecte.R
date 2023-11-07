@@ -20,6 +20,7 @@
 #' @import shinymanager
 #' @import stringr
 #' @import shinyWidgets
+#' @import janitor
 
 
 mod_suivi_collecte_ui <- function(id){
