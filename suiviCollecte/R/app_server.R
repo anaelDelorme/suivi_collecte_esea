@@ -26,7 +26,14 @@ app_server <- function(input, output, session) {
   observe({
     r$data_suivi <- aws.s3::s3read_using(
        FUN = arrow::read_parquet,
-        object = "ESEA/suivi.parquet",
+        object = "ESEA/DON_SUIVI.parquet",
+        bucket = "projet-suivi-collecte-masa",
+        opts = list("region" = "")
+        )  
+
+    r$nb_dossier <- aws.s3::s3read_using(
+       FUN = arrow::read_parquet,
+        object = "ESEA/NBDOSSIER.parquet",
         bucket = "projet-suivi-collecte-masa",
         opts = list("region" = "")
         )  

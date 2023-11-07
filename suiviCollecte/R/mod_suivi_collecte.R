@@ -118,7 +118,12 @@ mod_suivi_collecte_server <- function(id, r){
 
     #### Suivi dans le temps des questionnaires remontés
       output$suivi_remontee_temps <- renderEcharts4r({
-        
+      questionnaire_par_jour <- r$data_suivi   %>%
+        select(NOM_DOSSIER, DATE_REMONTEE, REP_LIB_REG_1, REP_LIB_DEPT_1) %>%
+        mutate(REP_LIB_REG_1 = stringr::str_to_title(REP_LIB_REG_1), REP_LIB_DEPT_1 = stringr::str_to_title(REP_LIB_DEPT_1)) %>% 
+        mutate(jour_remontee = as.Date(as.POSIXct(DATE_REMONTEE, format = "%Y-%m-%d %H:%M:%OS"))) %>%
+        filter(!is.na(jour_remontee)) 
+
 if (is.null(input$region_picker) || input$region_picker == "France"){
   questionnaire_par_jour_grp <- questionnaire_par_jour %>% 
     group_by(REP_LIB_REG_1) %>% 
@@ -129,13 +134,22 @@ if (is.null(input$region_picker) || input$region_picker == "France"){
     janitor::adorn_totals("col", name="France")
   
   nb_jour_collecte = as.Date(as.POSIXct("2024-03-01", format = "%Y-%m-%d")) - as.Date(as.POSIXct("2023-10-03" , format = "%Y-%m-%d"))
-  questionnaire_a_collecter_chaque_jour <- nrow(suivi_init) /as.numeric(nb_jour_collecte)
+  questionnaire_a_collecter_chaque_jour <- nrow(r$data_suivi) /as.numeric(nb_jour_collecte)
   
   questionnaire_par_jour_grp <- questionnaire_par_jour_grp %>% 
     mutate(nb_jours = as.numeric(as.Date(as.POSIXct(jour_remontee, format = "%Y-%m-%d")) - as.Date(as.POSIXct("2023-10-03" , format = "%Y-%m-%d")))) %>% 
     mutate(estimation = nb_jours * questionnaire_a_collecter_chaque_jour) %>% 
     select(-nb_jours) %>% 
     rename("Trajectoire estimée" = estimation)
+
+    p <- questionnaire_par_jour_grp %>%
+    echarts4r::e_charts(jour_remontee, height = "900px") %>% 
+      e_line(France, name ="Total France") %>% 
+      e_line(`Trajectoire estimée`, name ="Trajectoire estimée France")
+ 
+    for (col_name in colnames(questionnaire_par_jour_grp %>%  select(-jour_remontee, - France, -`Trajectoire estimée`))) {
+      p <- p %>% e_line_(col_name, name = col_name)
+    }
 }else{
   questionnaire_par_jour_grp <- questionnaire_par_jour %>% 
     filter(REP_LIB_REG_1 == input$region_picker) %>% 
@@ -146,15 +160,14 @@ if (is.null(input$region_picker) || input$region_picker == "France"){
     mutate(across(where(is.numeric), ~ cumsum(.))) %>% 
     janitor::adorn_totals("col", name="France") %>% 
     select(-France)
+
+    p <- questionnaire_par_jour_grp %>%
+    echarts4r::e_charts(jour_remontee, height = "900px")
+     for (col_name in colnames(questionnaire_par_jour_grp %>%  select(-jour_remontee))) {
+      p <- p %>% e_line_(col_name, name = col_name)
+    }
 }
 
-p <- questionnaire_par_jour_grp %>%
-  echarts4r::e_charts(jour_remontee, height = "900px") 
- 
-for (col_name in colnames(questionnaire_par_jour_grp %>%  select(-jour_remontee))) {
-  print(col_name)
-  p <- p %>% e_line_(col_name)
-}
 p <- p %>%
   echarts4r::e_x_axis(type = "time",
                       axisLabel = list(
@@ -170,12 +183,18 @@ p <- p %>%
                         )
                       )) %>%
   echarts4r::e_tooltip(formatter = htmlwidgets::JS(
-    "function(params) {return params.value[0] + ' : ' + params.value[1];}"
+    'function(params) {
+      let seriesName = params.seriesName || "";
+      let value0 = params.value[0] === null ? "" : params.value[0];
+      let value1 = params.value[1] === null ? "" : params.value[1];
+      return seriesName + " : " + value0 + " : " + value1;
+    }'
   )) %>%
   echarts4r::e_title("") %>%
-  echarts4r::e_y_axis(name = "Questionnaires remontés")
+  echarts4r::e_y_axis(name = "Questionnaires remontés") %>%
+  echarts4r::e_legend(type = "scroll")
 
-p
+  p
 
   })
 
