@@ -34,7 +34,7 @@ mod_suivi_collecte_ui <- function(id){
     fluidRow(
       bs4Dash::box(
           title = "Avancement de la collecte",
-          status = "indigo",
+          status = "orange",
           shinyWidgets::awesomeRadio(
             inputId = ns("map_choice_region_departement"),
             label = NULL, 
@@ -59,7 +59,31 @@ mod_suivi_collecte_ui <- function(id){
           echarts4rOutput(ns("suivi_remontee_temps"))
       )),
     fluidRow(
-      
+      bs4Dash::box(
+          title = "Suivi par enquêteur",
+          width = 12,
+          status = "indigo",
+          pickerInput(
+            inputId = ns("region_picker_enqueteur"),
+            label = NULL,
+            choices = NULL,
+            options = list(
+              style = "btn-warning"
+            )
+          ),
+          pickerInput(
+            inputId = ns("dept_picker_enqueteur"),
+            label = NULL,
+            choices = NULL,
+            options = list(
+              style = "btn-primary"
+            )
+          ),
+          echarts4rOutput(ns("histo_enqueteur")),
+          br(),
+          p("Choisir un département pour afficher le graphique."),
+          p("Note : tous les enquêteurs intervenant dans le département sélectionné sont présentés ici. Le nombre de questionnaires indiqué est lié à l'enquêteur pour tous les départements où il intervient.")
+      )
     )    
   )
 }
@@ -72,11 +96,45 @@ mod_suivi_collecte_server <- function(id, r){
     ns <- session$ns
 
     ### Liste des régions / départements
-    observe({
+   observe({
         nom_region <- c("France", unique(r$data_suivi %>% pull(REP_LIB_REG_1)))
         nom_region <- stringr::str_to_title(nom_region)
         updatePickerInput(session, inputId = "region_picker", choices = nom_region)    
+        updatePickerInput(session, inputId = "region_picker_enqueteur", choices = nom_region)    
+
+        nom_departement <- c("Tous", unique(r$data_suivi %>% pull(REP_LIB_DEPT_1)))
+          nom_departement <- stringr::str_to_title(nom_departement)
+          updatePickerInput(session, inputId = "dept_picker_enqueteur", choices = nom_departement)
     })
+
+        observeEvent(input$region_picker,
+    {
+      nom_region <- c("France", unique(r$data_suivi %>% pull(REP_LIB_REG_1)))
+      nom_region <- stringr::str_to_title(nom_region)
+      updatePickerInput(session, inputId = "region_picker_enqueteur", choices = nom_region, selected = input$region_picker) 
+      updatePickerInput(session, inputId = "region_picker", choices = nom_region, selected = input$region_picker) 
+
+      nom_departement <- c("Tous", unique(r$data_suivi %>% 
+                                            filter(REP_LIB_REG_1 == stringr::str_to_upper(input$region_picker)) %>% 
+                                            pull(REP_LIB_DEPT_1)))
+          nom_departement <- stringr::str_to_title(nom_departement)
+          updatePickerInput(session, inputId = "dept_picker_enqueteur", choices = nom_departement)
+      })
+
+
+    observeEvent(input$region_picker_enqueteur,
+    {
+      nom_region <- c("France", unique(r$data_suivi %>% pull(REP_LIB_REG_1)))
+      nom_region <- stringr::str_to_title(nom_region)
+      updatePickerInput(session, inputId = "region_picker_enqueteur", choices = nom_region, selected = input$region_picker_enqueteur) 
+      updatePickerInput(session, inputId = "region_picker", choices = nom_region, selected = input$region_picker_enqueteur) 
+
+      nom_departement <- c("Tous", unique(r$data_suivi %>% 
+                                            filter(REP_LIB_REG_1 == stringr::str_to_upper(input$region_picker_enqueteur)) %>% 
+                                            pull(REP_LIB_DEPT_1)))
+          nom_departement <- stringr::str_to_title(nom_departement)
+          updatePickerInput(session, inputId = "dept_picker_enqueteur", choices = nom_departement)
+      })
 
 
     #### Indicateurs
@@ -98,7 +156,7 @@ mod_suivi_collecte_server <- function(id, r){
 
        output$taux_collecte <- renderValueBox({
         valueBox(
-          value = glue(round(100 *(questionnaires_collectes / questionnaires_totaux_esea),3), ' %'),
+          value = glue(round(100 *(questionnaires_collectes / questionnaires_totaux_esea),1), ' %'),
           subtitle = "Taux de collecte (questionnaires qui ne sont plus en état initial)",
         color = "primary",
         icon = icon("circle-check")
@@ -107,13 +165,64 @@ mod_suivi_collecte_server <- function(id, r){
 
       output$taux_reponse <- renderValueBox({
         valueBox(
-          value = glue(round(100 *(questionnaires_valides / questionnaires_totaux_esea),3), ' %'),
+          value = glue(round(100 *(questionnaires_valides / questionnaires_totaux_esea),1), ' %'),
           subtitle = "Taux de réponse (questionnaires validés)",
         color = "teal",
         icon = icon("thumbs-up")
         )
       })
 
+    })
+
+  
+    ### Carte taux de collecte par département ou région
+    data_map_taux_collecte <- reactive({
+      if (input$map_choice_region_departement == "Département") {
+        suivi_par_departement <- r$data_suivi %>%
+          mutate(collecte = ifelse(ETAT_CONTROLE == 1 , "Non collecté", 'Collecté')) %>%
+          group_by(collecte, REP_CODE_DEPT_1) %>%
+          count() %>%
+          pivot_wider(names_from = collecte, values_from = n,  values_fill = 0) %>%
+          filter(!is.na(REP_CODE_DEPT_1)) %>%
+          mutate(total = Collecté + `Non collecté`) %>%
+          mutate(taux_collecte = Collecté/total) 
+
+        data_map_taux_collecte <- r$map_departements %>%
+          mutate(DEP = as.character(DEP)) %>%
+          left_join(suivi_par_departement, by = c("DEP" = "REP_CODE_DEPT_1")) %>%
+          rename(Name = Nom)
+      }
+      else{
+        suivi_par_region <- r$data_suivi %>%
+          mutate(collecte = ifelse(ETAT_CONTROLE == 1 , "Non collecté", 'Collecté')) %>%
+          group_by(collecte, REP_CODE_REG_1) %>%
+          count() %>%
+          pivot_wider(names_from = collecte, values_from = n,  values_fill = 0) %>%
+          filter(!is.na(REP_CODE_REG_1)) %>%
+          mutate(total = Collecté + `Non collecté`) %>%
+          mutate(taux_collecte = Collecté/total) 
+
+        data_map_taux_collecte <- r$map_regions %>%
+
+          left_join(suivi_par_region %>% mutate(REP_CODE_REG_1 = as.numeric(REP_CODE_REG_1)) , by = c("REG" = "REP_CODE_REG_1"))
+      }
+      list(df = data_map_taux_collecte)
+    })
+    
+    pal <- leaflet::colorNumeric("Oranges", NULL)
+
+    output$map_taux_collecte <- renderLeaflet({
+        data_taux_collecte <- data_map_taux_collecte()$df
+        leaflet::leaflet(data_taux_collecte) %>%
+          addPolygons(stroke = FALSE, 
+              smoothFactor = 0.3, 
+              fillOpacity = 1,
+              fillColor = ~pal(taux_collecte),
+              label = ~paste0(Name, ": ",
+                              round(100 * taux_collecte,0),
+                              " % / ",Collecté," collectés pour ", total," au total.")) %>%
+              addLegend(pal = pal, values = ~round(100*taux_collecte,0), title = "Taux de collecte",
+                    opacity = 1, position = "bottomright", na.label= "?",labFormat = labelFormat(suffix=" %"))
     })
 
 
@@ -200,57 +309,45 @@ p <- p %>%
   })
 
 
-    ### Carte taux de collecte par département ou région
-    data_map_taux_collecte <- reactive({
-      if (input$map_choice_region_departement == "Département") {
-        suivi_par_departement <- r$data_suivi %>%
-          mutate(collecte = ifelse(ETAT_CONTROLE == 1 , "Non collecté", 'Collecté')) %>%
-          group_by(collecte, REP_CODE_DEPT_1) %>%
-          count() %>%
-          pivot_wider(names_from = collecte, values_from = n,  values_fill = 0) %>%
-          filter(!is.na(REP_CODE_DEPT_1)) %>%
-          mutate(total = Collecté + `Non collecté`) %>%
-          mutate(taux_collecte = Collecté/total) 
+ #### Suivi dans le temps des questionnaires remontés
+      output$histo_enqueteur <- renderEcharts4r({
+        if (!is.null(input$dept_picker_enqueteur)){
+          if(input$dept_picker_enqueteur != "Tous"){
+              
+            liste_enqueteur <- r$data_suivi %>% 
+              filter(REP_LIB_DEPT_1 == stringr::str_to_upper(input$dept_picker_enqueteur)) %>% 
+              filter(!is.na(CODE_ENQUETEUR)) %>% 
+              pull(CODE_ENQUETEUR)
 
-        data_map_taux_collecte <- r$map_departements %>%
-          mutate(DEP = as.character(DEP)) %>%
-          left_join(suivi_par_departement, by = c("DEP" = "REP_CODE_DEPT_1")) %>%
-          rename(Name = Nom)
-      }
-      else{
-        suivi_par_region <- r$data_suivi %>%
-          mutate(collecte = ifelse(ETAT_CONTROLE == 1 , "Non collecté", 'Collecté')) %>%
-          group_by(collecte, REP_CODE_REG_1) %>%
-          count() %>%
-          pivot_wider(names_from = collecte, values_from = n,  values_fill = 0) %>%
-          filter(!is.na(REP_CODE_REG_1)) %>%
-          mutate(total = Collecté + `Non collecté`) %>%
-          mutate(taux_collecte = Collecté/total) 
+            nbdossier_enqueteur <- r$data_suivi %>% 
+              filter(ETAT_CONTROLE!=1) %>% 
+              filter(CODE_ENQUETEUR %in% liste_enqueteur) %>% 
+              group_by(CODE_ENQUETEUR,CODE_GEOGRAPHIQUE,NOM_ENQ,PRENOM_ENQ) %>% 
+              count() %>% 
+              ungroup() %>% 
+              left_join(r$nb_dossier, by = c("CODE_ENQUETEUR","CODE_GEOGRAPHIQUE")) %>% 
+              mutate("A collecter" = NBDOSSIER - n) %>% 
+              rename(Remontés = n) %>%
+              mutate(Enquêteur = paste(NOM_ENQ, PRENOM_ENQ, sep = " ")) 
+              
 
-        data_map_taux_collecte <- r$map_regions %>%
-                  mutate(REG = as.character(REG)) %>%
+            nbdossier_enqueteur %>%
+              echarts4r::e_charts(Enquêteur) %>% 
+              echarts4r::e_bar(Remontés, stack = "grp") %>% 
+              echarts4r::e_bar_("A collecter", stack = "grp")%>%
+              e_tooltip(trigger = "item")%>% 
+              e_x_axis(
+                axisLabel = list(
+                rotate = 20, # Angle d'inclinaison en degrés
+                interval = 0,
+                fontSize = 9
+                ))
+          }
+            
+        }
+          
 
-          left_join(suivi_par_region, by = c("REG" = "REP_CODE_REG_1"))
-      }
-      list(df = data_map_taux_collecte)
-    })
-    
-    pal <- leaflet::colorNumeric("Oranges", NULL)
-
-    output$map_taux_collecte <- renderLeaflet({
-        data_taux_collecte <- data_map_taux_collecte()$df
-        leaflet::leaflet(data_taux_collecte) %>%
-          addPolygons(stroke = FALSE, 
-              smoothFactor = 0.3, 
-              fillOpacity = 1,
-              fillColor = ~pal(taux_collecte),
-              label = ~paste0(Name, ": ",
-                              round(100 * taux_collecte,0),
-                              " % / ",Collecté," collectés pour ", total," au total.")) %>%
-              addLegend(pal = pal, values = ~round(100*taux_collecte,0), title = "Taux de collecte",
-                    opacity = 1, position = "bottomright", na.label= "?",labFormat = labelFormat(suffix=" %"))
-    })
-
+      })
   })
 }
     
