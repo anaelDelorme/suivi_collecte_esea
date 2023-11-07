@@ -213,6 +213,7 @@ p <- p %>%
           mutate(taux_collecte = Collecté/total) 
 
         data_map_taux_collecte <- r$map_departements %>%
+          mutate(DEP = as.character(DEP)) %>%
           left_join(suivi_par_departement, by = c("DEP" = "REP_CODE_DEPT_1")) %>%
           rename(Name = Nom)
       }
@@ -227,6 +228,8 @@ p <- p %>%
           mutate(taux_collecte = Collecté/total) 
 
         data_map_taux_collecte <- r$map_regions %>%
+                  mutate(REG = as.character(REG)) %>%
+
           left_join(suivi_par_region, by = c("REG" = "REP_CODE_REG_1"))
       }
       list(df = data_map_taux_collecte)
