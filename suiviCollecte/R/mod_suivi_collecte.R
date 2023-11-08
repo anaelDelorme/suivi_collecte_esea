@@ -53,7 +53,9 @@ mod_suivi_collecte_ui <- function(id){
             label = NULL,
             choices = NULL,
             options = list(
-              style = "btn-warning"
+              style = "btn-warning",
+              size = 5,
+              title = "Choix de la région"
             )
           ),
           echarts4rOutput(ns("suivi_remontee_temps"))
@@ -68,7 +70,9 @@ mod_suivi_collecte_ui <- function(id){
             label = NULL,
             choices = NULL,
             options = list(
-              style = "btn-warning"
+              style = "btn-warning",
+              size = 5,
+              title = "Choix de la région"
             )
           ),
           pickerInput(
@@ -76,7 +80,9 @@ mod_suivi_collecte_ui <- function(id){
             label = NULL,
             choices = NULL,
             options = list(
-              style = "btn-primary"
+              style = "btn-primary",
+              size = 5,
+              title = "Choix du département"
             )
           ),
           echarts4rOutput(ns("histo_enqueteur")),
@@ -97,26 +103,26 @@ mod_suivi_collecte_server <- function(id, r){
 
     ### Liste des régions / départements
    observe({
-        nom_region <- c("France", unique(r$data_suivi %>% pull(REP_LIB_REG_1)))
+        nom_region <- c("France", unique(r$data_suivi %>% arrange(REP_LIB_REG_1) %>% pull(REP_LIB_REG_1)))
         nom_region <- stringr::str_to_title(nom_region)
         updatePickerInput(session, inputId = "region_picker", choices = nom_region)    
         updatePickerInput(session, inputId = "region_picker_enqueteur", choices = nom_region)    
 
-        nom_departement <- c("Tous", unique(r$data_suivi %>% pull(REP_LIB_DEPT_1)))
+        nom_departement <-  unique(r$data_suivi %>% arrange(REP_LIB_DEPT_1) %>% pull(REP_LIB_DEPT_1))
           nom_departement <- stringr::str_to_title(nom_departement)
           updatePickerInput(session, inputId = "dept_picker_enqueteur", choices = nom_departement)
     })
 
         observeEvent(input$region_picker,
     {
-      nom_region <- c("France", unique(r$data_suivi %>% pull(REP_LIB_REG_1)))
+        nom_region <- c("France", unique(r$data_suivi %>% arrange(REP_LIB_REG_1) %>% pull(REP_LIB_REG_1)))
       nom_region <- stringr::str_to_title(nom_region)
       updatePickerInput(session, inputId = "region_picker_enqueteur", choices = nom_region, selected = input$region_picker) 
       updatePickerInput(session, inputId = "region_picker", choices = nom_region, selected = input$region_picker) 
 
-      nom_departement <- c("Tous", unique(r$data_suivi %>% 
+      nom_departement <- unique(r$data_suivi %>% arrange(REP_LIB_DEPT_1) %>% 
                                             filter(REP_LIB_REG_1 == stringr::str_to_upper(input$region_picker)) %>% 
-                                            pull(REP_LIB_DEPT_1)))
+                                            pull(REP_LIB_DEPT_1))
           nom_departement <- stringr::str_to_title(nom_departement)
           updatePickerInput(session, inputId = "dept_picker_enqueteur", choices = nom_departement)
       })
@@ -124,14 +130,14 @@ mod_suivi_collecte_server <- function(id, r){
 
     observeEvent(input$region_picker_enqueteur,
     {
-      nom_region <- c("France", unique(r$data_suivi %>% pull(REP_LIB_REG_1)))
+        nom_region <- c("France", unique(r$data_suivi %>% arrange(REP_LIB_REG_1) %>% pull(REP_LIB_REG_1)))
       nom_region <- stringr::str_to_title(nom_region)
       updatePickerInput(session, inputId = "region_picker_enqueteur", choices = nom_region, selected = input$region_picker_enqueteur) 
       updatePickerInput(session, inputId = "region_picker", choices = nom_region, selected = input$region_picker_enqueteur) 
 
-      nom_departement <- c("Tous", unique(r$data_suivi %>% 
+      nom_departement <- unique(r$data_suivi %>% arrange(REP_LIB_DEPT_1) %>%  
                                             filter(REP_LIB_REG_1 == stringr::str_to_upper(input$region_picker_enqueteur)) %>% 
-                                            pull(REP_LIB_DEPT_1)))
+                                            pull(REP_LIB_DEPT_1))
           nom_departement <- stringr::str_to_title(nom_departement)
           updatePickerInput(session, inputId = "dept_picker_enqueteur", choices = nom_departement)
       })
@@ -233,8 +239,8 @@ mod_suivi_collecte_server <- function(id, r){
         mutate(REP_LIB_REG_1 = stringr::str_to_title(REP_LIB_REG_1), REP_LIB_DEPT_1 = stringr::str_to_title(REP_LIB_DEPT_1)) %>% 
         mutate(jour_remontee = as.Date(as.POSIXct(DATE_REMONTEE, format = "%Y-%m-%d %H:%M:%OS"))) %>%
         filter(!is.na(jour_remontee)) 
-
-if (is.null(input$region_picker) || input$region_picker == "France"){
+print(input$region_picker)
+if (is.null(input$region_picker) || input$region_picker == "" || input$region_picker == "France"){
   questionnaire_par_jour_grp <- questionnaire_par_jour %>% 
     group_by(REP_LIB_REG_1) %>% 
     count(jour_remontee) %>%
@@ -287,7 +293,7 @@ p <- p %>%
               // convert to date format
               let date = new Date(value);
 
-              label = date.getDate() + "-" + (parseInt(date.getMonth()) + 1) + "-" + date.getFullYear();
+              label = date.getDate() + "-" + (parseInt(date.getMonth()) + 1);
               return label;
             }'
                         )
@@ -311,8 +317,8 @@ p <- p %>%
 
  #### Suivi dans le temps des questionnaires remontés
       output$histo_enqueteur <- renderEcharts4r({
-        if (!is.null(input$dept_picker_enqueteur)){
-          if(input$dept_picker_enqueteur != "Tous"){
+        if (!is.null(input$region_picker) && input$region_picker != ""){
+          if(!is.null(input$dept_picker_enqueteur) && input$dept_picker_enqueteur != ""){
               
             liste_enqueteur <- r$data_suivi %>% 
               filter(REP_LIB_DEPT_1 == stringr::str_to_upper(input$dept_picker_enqueteur)) %>% 
