@@ -22,7 +22,7 @@ mod_suivi_accept_ui <- function(id){
   column(
     width = 12,
     br(),
-   # h4("Vue régionale", style = "color: white"),
+    h4("Vue régionale", style = "color: white"),
     pickerInput(
       inputId = ns("region_picker"),
       label = NULL,
@@ -46,6 +46,36 @@ mod_suivi_accept_ui <- function(id){
           title = "Nombre de questionnaires acceptés (dont cessation)",
           status = "indigo",
           echarts4rOutput(ns("map_nb_questionnaire_accept"))
+      )),
+    fluidRow(
+  style = "background-color: #343a40;",
+  column(
+    width = 12,
+    br(),
+    h4("Vue départementale", style = "color: white"),
+    pickerInput(
+      inputId = ns("departement_picker"),
+      label = NULL,
+      choices = NULL,
+      options = list(
+        style = "btn",
+        size = 5,
+        title = "Choix du département"
+      )
+    )
+  )
+    ),
+    br(),
+  fluidRow(
+      bs4Dash::box(
+          title = "Suivi accept départemental",
+          status = "lightblue",
+          echarts4rOutput(ns("pie_questionnaire_par_etat_par_departement"))
+      ),
+      bs4Dash::box(
+          title = "Nombre de questionnaires acceptés (dont cessation)",
+          status = "lightblue",
+          echarts4rOutput(ns("map_nb_questionnaire_accept_departement"))
       ))
   )
 }
@@ -59,7 +89,7 @@ mod_suivi_accept_server <- function(id, r){
 
     ### Liste des régions / départements
     observe({
-        nom_region <- c("France", unique(r$data_suivi %>% arrange(REP_LIB_REG_1) %>%  pull(REP_LIB_REG_1)))
+        nom_region <-  unique(r$data_suivi %>% arrange(REP_LIB_REG_1) %>%  pull(REP_LIB_REG_1))
         nom_region <- stringr::str_to_title(nom_region)
         updatePickerInput(session, inputId = "region_picker", choices = nom_region)    
 
@@ -71,7 +101,7 @@ mod_suivi_accept_server <- function(id, r){
 
     observeEvent(input$region_picker,
     {
-      nom_region <- c("France", unique(r$data_suivi %>% arrange(REP_LIB_REG_1) %>% pull(REP_LIB_REG_1)))
+      nom_region <- unique(r$data_suivi %>% arrange(REP_LIB_REG_1) %>% pull(REP_LIB_REG_1))
         nom_region <- stringr::str_to_title(nom_region)
       updatePickerInput(session, inputId = "region_picker", choices = nom_region, selected = input$region_picker) 
           nom_departement <- unique(r$data_suivi %>% 
@@ -125,6 +155,44 @@ dossier_accept %>%
             dossier <- r$data_suivi
             dossier_accept <- dossier %>%
               filter(REP_LIB_REG_1 == stringr::str_to_upper(input$region_picker)) %>% 
+              filter(!is.na(ACCEPT)) %>% 
+                  mutate(etat_accept = 
+                      case_when(
+                        ACCEPT == "1" & CESSATION == "1" ~ "Cessation",
+                        ACCEPT == "1" ~ "Accept = 1, hors Cessation",
+                        ACCEPT %in% c("2", "3")~ "Injoingnable ou impossibilité de repondre",
+                        ACCEPT ==  "9"  ~ "Refus",
+                      )
+              ) %>% 
+              group_by(etat_accept) %>% 
+              count() %>% 
+              ungroup()
+
+
+      df_colours <- data.frame(etat_accept = c("Accept = 1, hors Cessation", "Cessation","Injoingnable ou impossibilité de repondre", "Refus" ),
+                              colours = c("#5470c6", "#73c0de", "#fac858", "#E8465B"))
+      colour <- df_colours %>%
+        filter(etat_accept %in% dossier_accept$etat_accept) %>%
+        select(colours) %>%
+        unlist() %>% 
+        unname()
+
+      dossier_accept %>% 
+        e_charts(etat_accept) %>% 
+        e_pie(n, radius = c("40%", "70%")) |>
+        e_tooltip(formatter = htmlwidgets::JS("function(params) {return params.name + ': ' + params.value;}")) |>
+        e_color(color = colour)
+      }
+    })
+
+### Pie par département
+    #### Nombre de questionnaires par accept
+    output$pie_questionnaire_par_etat_par_departement <- renderEcharts4r({
+      if (!is.null(input$departement_picker) && input$departement_picker !=""){
+      
+            dossier <- r$data_suivi
+            dossier_accept <- dossier %>%
+              filter(REP_LIB_DEPT_1 == stringr::str_to_upper(input$departement_picker)) %>% 
               filter(!is.na(ACCEPT)) %>% 
                   mutate(etat_accept = 
                       case_when(
