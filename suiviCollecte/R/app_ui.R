@@ -49,12 +49,23 @@ app_ui <- function(request) {
         tags$style(HTML(".centered-image { display: flex; justify-content: center; align-items: center; }")),
         br(),
 
-          fluidRow(
-            column(width = 12, div(class = "centered-image",
-              img(src = "www/logo_tfc.png", width = 80, height = 80)
-            ))
-          )
-      ),
+         
+          bs4Card(
+       title = span(
+    icon("lightbulb", class = "mr-1"), # Icône d'ampoule
+    "Astuce"
+  ), 
+       closable = TRUE, 
+       width = 12,
+       status = "primary", 
+       solidHeader = FALSE, 
+       collapsible = TRUE,
+       labelText = 1,
+       labelStatus = "primary",
+       labelTooltip = "Hi Bro!",
+       p("Dans un graphique, vous pouvez effacer une série en cliquant sur sa représentation dans la légende.")
+      )
+     ),
       # Ajout du body
       body = bs4Dash::dashboardBody(
         # liste des pages à afficher

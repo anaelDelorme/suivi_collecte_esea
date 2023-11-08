@@ -239,7 +239,6 @@ mod_suivi_collecte_server <- function(id, r){
         mutate(REP_LIB_REG_1 = stringr::str_to_title(REP_LIB_REG_1), REP_LIB_DEPT_1 = stringr::str_to_title(REP_LIB_DEPT_1)) %>% 
         mutate(jour_remontee = as.Date(as.POSIXct(DATE_REMONTEE, format = "%Y-%m-%d %H:%M:%OS"))) %>%
         filter(!is.na(jour_remontee)) 
-print(input$region_picker)
 if (is.null(input$region_picker) || input$region_picker == "" || input$region_picker == "France"){
   questionnaire_par_jour_grp <- questionnaire_par_jour %>% 
     group_by(REP_LIB_REG_1) %>% 
