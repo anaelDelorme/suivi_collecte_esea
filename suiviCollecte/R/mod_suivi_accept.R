@@ -17,6 +17,15 @@
 mod_suivi_accept_ui <- function(id){
   ns <- NS(id)
   tagList(
+        fluidRow(
+  style = "background-color: #343a40;",
+  column(
+    width = 12,
+    br(),
+    h4("Vue nationale", style = "color: white")
+    )
+    ),
+    br(),
      fluidRow(
       bs4Dash::box(
           title = "Suivi accept",
@@ -24,6 +33,7 @@ mod_suivi_accept_ui <- function(id){
           width = 12,
           echarts4rOutput(ns("pie_questionnaire_par_etat"))
       )),
+      
     fluidRow(
   style = "background-color: #343a40;",
   column(
@@ -90,7 +100,7 @@ mod_suivi_accept_ui <- function(id){
       )),
   fluidRow(
       bs4Dash::box(
-          title = "Suivi Accept par département intervenant sur le département",
+          title = "Suivi Etat par département intervenant sur le département",
           status = "lightblue",
           width = 12,
           echarts4rOutput(ns("graph_enqueteur_departement"))
@@ -256,7 +266,8 @@ dossier_accept %>%
                 label = ~paste0(Name, ": ",n)
             )
   })
-  observe({
+  observeEvent(input$map_choice_region_departement,
+    {
     if(input$map_choice_region_departement == "Région"){
         dossiers <- r$data_suivi %>%
           filter(ACCEPT != "1") %>% 
