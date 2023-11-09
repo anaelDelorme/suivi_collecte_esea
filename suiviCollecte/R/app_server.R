@@ -7,6 +7,7 @@
 #' @importFrom arrow read_parquet
 #' @import geojsonio
 #' @import shinymanager
+#' @importFrom sf st_centroid st_coordinates
 #' @noRd
 
 app_server <- function(input, output, session) {
@@ -38,9 +39,24 @@ app_server <- function(input, output, session) {
         opts = list("region" = "")
         )  
 
-    r$map_regions <- geojsonio::topojson_read("https://raw.githubusercontent.com/neocarto/resources/master/geometries/France/regions.topojson")
+    regions <- geojsonio::topojson_read("https://raw.githubusercontent.com/neocarto/resources/master/geometries/France/regions.topojson")
+     r$map_regions <- regions
+    suppressWarnings({
+      france_regions_centroid <- sf::st_centroid(regions)
+    })
+    regions$centroid_longitude <- sf::st_coordinates(france_regions_centroid)[, 1]
+    regions$centroid_latitude <- sf::st_coordinates(france_regions_centroid)[, 2]
 
-    r$map_departements <- geojsonio::topojson_read("https://raw.githubusercontent.com/neocarto/resources/master/geometries/France/departements.topojson")
+    r$map_regions_centroid <- regions
+
+    departements <- geojsonio::topojson_read("https://raw.githubusercontent.com/neocarto/resources/master/geometries/France/departements.topojson")
+    suppressWarnings({
+      france_departements_centroid <- sf::st_centroid(departements)
+    })
+    r$map_departements <- departements
+    departements$centroid_longitude <- sf::st_coordinates(france_departements_centroid)[, 1]
+    departements$centroid_latitude <- sf::st_coordinates(france_departements_centroid)[, 2]
+    r$map_departements_centroid <- departements
 
   })
  # Your application server logic

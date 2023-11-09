@@ -216,19 +216,23 @@ mod_suivi_collecte_server <- function(id, r){
     })
     
     pal <- leaflet::colorNumeric("Oranges", NULL)
+    pal_inverse <- leaflet::colorNumeric("Oranges",  NULL, reverse = TRUE)
 
     output$map_taux_collecte <- renderLeaflet({
         data_taux_collecte <- data_map_taux_collecte()$df
         leaflet::leaflet(data_taux_collecte) %>%
-          addPolygons(stroke = FALSE, 
-              smoothFactor = 0.3, 
-              fillOpacity = 1,
+          addPolygons(color = "#343a40", 
+                weight = 0.5, 
+                smoothFactor = 0.5,
+                opacity = 0.1, 
+                fillOpacity = 1.0,
               fillColor = ~pal(taux_collecte),
               label = ~paste0(Name, ": ",
                               round(100 * taux_collecte,0),
                               " % / ",Collecté," collectés pour ", total," au total.")) %>%
-              addLegend(pal = pal, values = ~round(100*taux_collecte,0), title = "Taux de collecte",
-                    opacity = 1, position = "bottomright", na.label= "?",labFormat = labelFormat(suffix=" %"))
+              addLegend(pal = pal_inverse, values = ~round(100*taux_collecte,0), title = "Taux de collecte",
+                    opacity = 1, position = "bottomright", na.label= "?",labFormat = labelFormat(suffix=" %", transform = function(x)  sort(x, decreasing = TRUE)))
+
     })
 
 
