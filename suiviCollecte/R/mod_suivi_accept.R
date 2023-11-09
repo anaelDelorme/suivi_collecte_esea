@@ -85,11 +85,14 @@ mod_suivi_accept_ui <- function(id){
       bs4Dash::box(
           title = "Suivi accept départemental",
           status = "lightblue",
+          width = 12,
           echarts4rOutput(ns("pie_questionnaire_par_etat_par_departement"))
-      ),
+      )),
+  fluidRow(
       bs4Dash::box(
           title = "Suivi Accept par département intervenant sur le département",
           status = "lightblue",
+          width = 12,
           echarts4rOutput(ns("graph_enqueteur_departement"))
       ))
   )
