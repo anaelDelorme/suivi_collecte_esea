@@ -11,8 +11,8 @@ app_server <- function(input, output, session) {
   res_auth <- shinymanager::secure_server(
     check_credentials = shinymanager::check_credentials(
       data.frame(
-        user = c("id"), # mandatory
-        password = c("123456"), # mandatory
+        user = c(Sys.getenv("LOGIN_SITE_1")), # mandatory
+        password = c(Sys.getenv("MDP_SITE_2")), # mandatory
         admin = c(FALSE),
         stringsAsFactors = FALSE
       )
