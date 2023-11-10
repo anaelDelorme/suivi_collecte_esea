@@ -48,7 +48,8 @@ app_server <- function(input, output, session) {
 
     r$map_regions_centroid <- regions
 
-    departements <- geojsonio::topojson_read("https://raw.githubusercontent.com/neocarto/resources/master/geometries/France/departements.topojson")    suppressWarnings({
+    departements <- geojsonio::topojson_read("https://raw.githubusercontent.com/neocarto/resources/master/geometries/France/departements.topojson")    
+    suppressWarnings({
       france_departements_centroid <- sf::st_centroid(departements)
     })
     r$map_departements <- departements
