@@ -12,7 +12,7 @@ app_server <- function(input, output, session) {
     check_credentials = shinymanager::check_credentials(
       data.frame(
         user = c(Sys.getenv("LOGIN_SITE_1")), # mandatory
-        password = c(Sys.getenv("MDP_SITE_2")), # mandatory
+        password = c(Sys.getenv("MDP_SITE_1")), # mandatory
         admin = c(FALSE),
         stringsAsFactors = FALSE
       )
