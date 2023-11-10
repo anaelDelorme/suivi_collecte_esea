@@ -23,11 +23,10 @@ The goal of suiviCollecte is to ...
 
 ## Installation
 
-You can install the development version of suiviCollecte from [GitHub](https://github.com/) with:
+You can install the development version of suiviCollecte like so:
 
 ``` r
-# install.packages("devtools")
-devtools::install_github("anaelDelorme/suivi_collecte_esea")
+# FILL THIS IN! HOW CAN PEOPLE INSTALL YOUR DEV PACKAGE?
 ```
 
 ## Example

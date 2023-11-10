@@ -1,7 +1,7 @@
 default:
-  golem_name: Suivi collecte ESEA
-  golem_version: 0.9.0.0000
-  app_prod: yes
+  golem_name: suiviCollecte
+  golem_version: 0.0.0.9000
+  app_prod: no
 production:
   app_prod: yes
 dev:

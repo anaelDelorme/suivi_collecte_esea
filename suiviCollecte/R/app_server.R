@@ -3,14 +3,11 @@
 #' @param input,output,session Internal parameters for {shiny}.
 #'     DO NOT REMOVE.
 #' @import shiny
-#' @importFrom aws.s3 s3read_using
-#' @importFrom arrow read_parquet
-#' @import geojsonio
 #' @import shinymanager
-#' @importFrom sf st_centroid st_coordinates
+#' @import arrow
 #' @noRd
-
 app_server <- function(input, output, session) {
+  # Your application server logic
   res_auth <- shinymanager::secure_server(
     check_credentials = shinymanager::check_credentials(
       data.frame(
@@ -23,24 +20,26 @@ app_server <- function(input, output, session) {
   )
 
 
+
   r <- reactiveValues()
+
   observe({
     r$data_suivi <- aws.s3::s3read_using(
-       FUN = arrow::read_parquet,
-        object = "ESEA/DON_SUIVI.parquet",
-        bucket = "projet-suivi-collecte-masa",
-        opts = list("region" = "")
-        )  
+      FUN = arrow::read_parquet,
+      object = "ESEA/DON_SUIVI.parquet",
+      bucket = "projet-suivi-collecte-masa",
+      opts = list("region" = "")
+    )
 
     r$nb_dossier <- aws.s3::s3read_using(
-       FUN = arrow::read_parquet,
-        object = "ESEA/NBDOSSIER.parquet",
-        bucket = "projet-suivi-collecte-masa",
-        opts = list("region" = "")
-        )  
+      FUN = arrow::read_parquet,
+      object = "ESEA/NBDOSSIER.parquet",
+      bucket = "projet-suivi-collecte-masa",
+      opts = list("region" = "")
+    )
 
     regions <- geojsonio::topojson_read("https://raw.githubusercontent.com/neocarto/resources/master/geometries/France/regions.topojson")
-     r$map_regions <- regions
+    r$map_regions <- regions
     suppressWarnings({
       france_regions_centroid <- sf::st_centroid(regions)
     })
@@ -49,8 +48,7 @@ app_server <- function(input, output, session) {
 
     r$map_regions_centroid <- regions
 
-    departements <- geojsonio::topojson_read("https://raw.githubusercontent.com/neocarto/resources/master/geometries/France/departements.topojson")
-    suppressWarnings({
+    departements <- geojsonio::topojson_read("https://raw.githubusercontent.com/neocarto/resources/master/geometries/France/departements.topojson")    suppressWarnings({
       france_departements_centroid <- sf::st_centroid(departements)
     })
     r$map_departements <- departements
@@ -59,8 +57,8 @@ app_server <- function(input, output, session) {
     r$map_departements_centroid <- departements
 
   })
- # Your application server logic
-  
+  # Your application server logic
+
 
   mod_suivi_collecte_server("suivi_collecte_1",r)
   mod_suivi_accept_server("suivi_accept_1",r)

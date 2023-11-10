@@ -48,7 +48,7 @@ usethis::use_test("app")
 # Documentation
 
 ## Vignette ----
-usethis::use_vignette("suiviCollecte")
+usethis::use_vignette("golemShinyManager")
 devtools::build_vignettes()
 
 ## Code Coverage----
