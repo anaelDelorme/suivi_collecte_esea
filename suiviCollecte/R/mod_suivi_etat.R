@@ -60,7 +60,7 @@ mod_suivi_etat_ui <- function(id){
           echarts4rOutput(ns("pie_questionnaire_par_etat_par_region"))
       ),
       bs4Dash::box(
-          title = "Nombre de questionnaires injoignables, dans l'impossibilité de repondre ou en refus",
+          title = "Nombre de questionnaires à corriger ou à confirmer",
           status = "indigo",
           shinyWidgets::awesomeRadio(
             inputId = ns("map_choice_region_departement"),
@@ -100,7 +100,7 @@ mod_suivi_etat_ui <- function(id){
       )),
   fluidRow(
       bs4Dash::box(
-          title = "Suivi Accept par département intervenant sur le département",
+          title = "Suivi état par enquêteur intervenant sur le département",
           status = "lightblue",
           width = 12,
           echarts4rOutput(ns("graph_enqueteur_departement"))
@@ -297,7 +297,7 @@ df_colours <- data.frame(etat_etat = c("A compléter", "A confirmer", "A corrige
           rename(Name = Nom)
 
         max_n = max(data_carte_rond_proportionnel$n, na.rm = TRUE)
-        taille_rond= 100/max_n
+        taille_rond= 10/max_n
     }
         #print(data_carte_rond_proportionnel)
          leaflet::leafletProxy(ns("map_nb_questionnaire_non_etat"), data = data_carte_rond_proportionnel) %>%
@@ -361,41 +361,53 @@ df_colours <- data.frame(etat_etat = c("A compléter", "A confirmer", "A corrige
   output$graph_enqueteur_departement <- renderEcharts4r({
       if (!is.null(input$region_picker) && input$region_picker != ""){
           if(!is.null(input$departement_picker) && input$departement_picker != ""){
+            #print(input$departement_picker)
             liste_enqueteur <- r$data_suivi %>% 
               filter(REP_LIB_DEPT_1 == stringr::str_to_upper(input$departement_picker)) %>% 
               filter(!is.na(CODE_ENQUETEUR)) %>% 
               pull(CODE_ENQUETEUR)
+            #print(liste_enqueteur)
 
             nbdossier_enqueteur <- r$data_suivi %>% 
               filter(CODE_ENQUETEUR %in% liste_enqueteur) %>% 
-            mutate(etat_etat = 
+                  mutate(etat_etat = 
                 case_when(
-                  ETAT_CONTROLE == "1" ~ "Accept = 1, hors Cessation",
-                  ETAT_CONTROLE %in% c("2", "3")~ "Injoignable ou impossibilité de repondre",
-                  ETAT_CONTROLE ==  "9"  ~ "Refus",
+                  ETAT_CONTROLE == "5" ~ "Validé",
+                  ETAT_CONTROLE == "4" ~ "A confirmer",
+                  ETAT_CONTROLE == "2"~ "A compléter",
+                  ETAT_CONTROLE ==  "3"  ~ "A corriger",
                 )
-        ) %>%  
+        ) %>% 
               group_by(CODE_ENQUETEUR,etat_etat,NOM_ENQ,PRENOM_ENQ) %>% 
               count() %>% 
               ungroup() %>% 
               mutate(Enquêteur = paste(NOM_ENQ, PRENOM_ENQ, sep = " ")) %>%
-              tidyr::pivot_wider(names_from = état_etat, values_from= n)
+              tidyr::pivot_wider(names_from = etat_etat, values_from= n)
               
             #print(nbdossier_enqueteur) 
 
             chart_enq <- nbdossier_enqueteur %>%
               echarts4r::e_charts(Enquêteur) 
 
-            if ("Accept = 1, hors Cessation" %in% names(nbdossier_enqueteur)) {
-                chart_enq <- chart_enq %>% echarts4r::e_bar_("Accept = 1, hors Cessation", stack = "grp", color="#5470c6") 
+
+            if ("A corriger" %in% names(nbdossier_enqueteur)) {
+                chart_enq <- chart_enq %>% echarts4r::e_bar_("A corriger", stack = "grp", color = "#E8465B") 
+            }  
+
+            if ("A confirmer" %in% names(nbdossier_enqueteur)) {
+                chart_enq <- chart_enq %>% echarts4r::e_bar_("A confirmer", stack = "grp", color="#EE81A2")
             } 
 
-            if ("Injoignable ou impossibilité de repondre" %in% names(nbdossier_enqueteur)) {
-                chart_enq <- chart_enq %>% echarts4r::e_bar_("Injoignable ou impossibilité de repondre", stack = "grp", color="#fac858")
+            if ("A compléter" %in% names(nbdossier_enqueteur)) {
+                chart_enq <- chart_enq %>% echarts4r::e_bar_("A compléter", stack = "grp", color = "#fac858") 
             } 
-            if ("Refus" %in% names(nbdossier_enqueteur)) {
-                chart_enq <- chart_enq %>% echarts4r::e_bar_("Refus", stack = "grp", color = "#E8465B") 
-            }  
+            
+            if ("Validé" %in% names(nbdossier_enqueteur)) {
+                chart_enq <- chart_enq %>% echarts4r::e_bar_("Validé", stack = "grp", color="#31a859") 
+            } 
+
+            
+            
             chart_enq <- chart_enq %>%
               e_tooltip(trigger = "item")%>% 
               e_x_axis(
