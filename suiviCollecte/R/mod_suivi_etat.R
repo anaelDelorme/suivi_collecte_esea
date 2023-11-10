@@ -247,13 +247,16 @@ df_colours <- data.frame(etat_etat = c("A compléter", "A confirmer", "A corrige
 ### Carte régionale 
  output$map_nb_questionnaire_non_etat <- renderLeaflet({
     dossiers <- r$data_suivi %>%
-          filter(ETAT_CONTROLE != "1") %>% 
+          filter(ETAT_CONTROLE %in% c("3", "4")) %>% 
           count(REP_CODE_REG_1, REP_LIB_REG_1)%>% 
           mutate(REP_LIB_REG_1 = stringr::str_to_title(REP_LIB_REG_1))%>% 
           mutate(REP_CODE_REG_1 = as.numeric(REP_CODE_REG_1)) 
           
         data_carte_rond_proportionnel <-  r$map_regions_centroid  %>% 
           left_join(dossiers, by = c("REG" = "REP_CODE_REG_1")) 
+
+        max_n = max(data_carte_rond_proportionnel$n, na.rm = TRUE)
+        taille_rond= 50/max_n
           
       leaflet(data_carte_rond_proportionnel) %>% 
             leaflet::addPolygons(color = "#343a40", weight = 0.3, smoothFactor = 0.5,
@@ -261,7 +264,7 @@ df_colours <- data.frame(etat_etat = c("A compléter", "A confirmer", "A corrige
             leaflet::addCircleMarkers(
               lng = ~centroid_longitude,
               lat = ~centroid_latitude,
-              radius = ~ n,
+              radius = ~ n * taille_rond,
               fillOpacity = ~ifelse(is.na(n), 0, 0.8),
               color = "#e91f1fb6",
               stroke = FALSE,
@@ -272,16 +275,19 @@ df_colours <- data.frame(etat_etat = c("A compléter", "A confirmer", "A corrige
     {
     if(input$map_choice_region_departement == "Région"){
         dossiers <- r$data_suivi %>%
-          filter(ETAT_CONTROLE != "1") %>% 
+          filter(ETAT_CONTROLE %in% c("3","4")) %>% 
           count(REP_CODE_REG_1, REP_LIB_REG_1)%>% 
           mutate(REP_LIB_REG_1 = stringr::str_to_title(REP_LIB_REG_1))%>% 
           mutate(REP_CODE_REG_1 = as.numeric(REP_CODE_REG_1)) 
           
         data_carte_rond_proportionnel <-  r$map_regions_centroid  %>% 
           left_join(dossiers, by = c("REG" = "REP_CODE_REG_1")) 
+
+          max_n = max(data_carte_rond_proportionnel$n, na.rm = TRUE)
+        taille_rond= 50/max_n
     }else{
         dossiers <- r$data_suivi %>%
-          filter(ETAT_CONTROLE != "1") %>% 
+          filter(ETAT_CONTROLE %in% c("3","4"))  %>% 
            count(REP_CODE_DEPT_1, REP_LIB_DEPT_1)%>% 
           mutate(REP_LIB_DEPT_1 = stringr::str_to_title(REP_LIB_DEPT_1))%>% 
           mutate(REP_CODE_DEPT_1 = as.numeric(REP_CODE_DEPT_1)) 
@@ -290,8 +296,10 @@ df_colours <- data.frame(etat_etat = c("A compléter", "A confirmer", "A corrige
           left_join(dossiers, by = c("REG" = "REP_CODE_DEPT_1")) %>% 
           rename(Name = Nom)
 
+        max_n = max(data_carte_rond_proportionnel$n, na.rm = TRUE)
+        taille_rond= 100/max_n
     }
- 
+        #print(data_carte_rond_proportionnel)
          leaflet::leafletProxy(ns("map_nb_questionnaire_non_etat"), data = data_carte_rond_proportionnel) %>%
             leaflet::clearShapes() %>%
             leaflet::clearMarkers()%>%
@@ -300,7 +308,7 @@ df_colours <- data.frame(etat_etat = c("A compléter", "A confirmer", "A corrige
             leaflet::addCircleMarkers(
               lng = ~centroid_longitude,
               lat = ~centroid_latitude,
-              radius = ~ n,
+              radius = ~ n * taille_rond,
               fillOpacity = ~ifelse(is.na(n), 0, 0.8),
               color = "#e91f1fb6",
               stroke = FALSE,
