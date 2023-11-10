@@ -1,6 +1,6 @@
 Package: suiviCollecte
 Title: Suivi de la collecte ESEA
-Version: 0.0.1.0000
+Version: 0.9.0.0000
 Authors@R: 
     person("Anaël", "Delorme", , "anael.delorme@agriculture.gouv.Fr", role = c("cre", "aut"))
 Description: Site web de suivi de la collecte de l'enquête ESEA 2023-2024.
