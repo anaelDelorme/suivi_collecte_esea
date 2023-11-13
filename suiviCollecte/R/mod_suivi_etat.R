@@ -269,7 +269,7 @@ df_colours <- data.frame(etat_etat = factor_level_etat,
           left_join(dossiers, by = c("REG" = "REP_CODE_REG_1")) 
 
         max_n = max(data_carte_rond_proportionnel$n, na.rm = TRUE)
-        taille_rond= 50/max_n
+        taille_rond= 25/max_n
           
       leaflet(data_carte_rond_proportionnel) %>% 
             leaflet::addPolygons(color = "#343a40", weight = 0.3, smoothFactor = 0.5,

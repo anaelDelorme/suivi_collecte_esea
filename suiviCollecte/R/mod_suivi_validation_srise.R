@@ -97,56 +97,59 @@ mod_suivi_validation_srise_server <- function(id, r){
             }
 
             data_validation_srise <- dossier %>% 
-                select(NOM_DOSSIER,starts_with("SEM_")) %>% 
-                pivot_longer(names_to = "semaine", values_to = "etat", -NOM_DOSSIER) %>% 
-                mutate(nb = ifelse(is.na(etat), 0, 1)) %>% 
-                arrange(etat) %>% 
-                pivot_wider(names_from = etat, values_from = nb) %>% 
-                group_by(semaine) %>% 
-                summarise(across(is.numeric,~sum(., na.rm= TRUE))) %>% 
-                ungroup() %>%
-                mutate(semaine = stringr::str_remove(string = semaine, pattern = "SEM_"))
+  select(NOM_DOSSIER,starts_with("SEM_")) %>% 
+  pivot_longer(names_to = "date", values_to = "etat", -NOM_DOSSIER) %>% 
+  mutate(nb = ifelse(is.na(etat), 0, 1)) %>% 
+  arrange(etat) %>% 
+  pivot_wider(names_from = etat, values_from = nb) %>% 
+  group_by(date) %>% 
+  summarise(across(where(is.numeric),~sum(., na.rm= TRUE))) %>% 
+  ungroup() %>%
+  mutate(date = stringr::str_remove(string = date, pattern = "SEM_")) %>% 
+  mutate(date = lubridate::dmy(date)) %>% 
+  arrange(date)
 
-        new_names <- c(
-                  "1 - Validé" = "1", "2 - Corrigé" = "2", "3 - Non validé" = "3", "4 - R4" = "4", "5 - R5" = "5", 
-                  "6 - R6" = "6", "7 - R7" = "7", "8 - R8" = "8", "9 - Non vu" = "9"
-                )
+new_names <- c(
+  "1 - Validé" = "1", "2 - Corrigé" = "2", "3 - Non validé" = "3", "4 - R4" = "4", "5 - R5" = "5", 
+  "6 - R6" = "6", "7 - R7" = "7", "8 - R8" = "8", "9 - Non vu" = "9"
+)
 
-          data_validation_srise <- data_validation_srise %>%
-                rename(any_of(new_names))
+data_validation_srise <- data_validation_srise %>%
+  rename(any_of(new_names))
 
-              if("NA" %in% names(data_validation_srise)){
-                data_validation_srise <- data_validation_srise %>%
-                  select(-`NA`)
-              }
+if("NA" %in% names(data_validation_srise)){
+  data_validation_srise <- data_validation_srise %>%
+    select(-`NA`)
+}
 
-              df_colours <- data.frame(etat_srise = c("1 - Validé", "2 - Corrigé", "3 - Non validé", "4 - R4", "5 - R5", "6 - R6", "7 - R7", "8 - R8", "9 - Non vu" ),
-                                      colours = c("#58C74D", "#5470c6", "#725523", "#FFF18A" ,"#F2B449","#daa140","#eb8525","#eb6f5c", "#E8465B"))
+df_colours <- data.frame(etat_srise = c("1 - Validé", "2 - Corrigé", "3 - Non validé", "4 - R4", "5 - R5", "6 - R6", "7 - R7", "8 - R8", "9 - Non vu" ),
+                         colours = c("#58C74D", "#5470c6", "#725523", "#FFF18A" ,"#F2B449","#daa140","#eb8525","#eb6f5c", "#E8465B"))
 
-              colour <- df_colours %>%
-                filter(etat_srise %in% names(data_validation_srise)) %>%
-                select(colours) %>%
-                unlist() %>% 
-                unname()
+colour <- df_colours %>%
+  filter(etat_srise %in% names(data_validation_srise)) %>%
+  select(colours) %>%
+  unlist() %>% 
+  unname()
 
-              p <- data_validation_srise %>% 
-                e_charts(semaine) 
+p <- data_validation_srise %>% 
+  e_charts(date) 
 
-              for(name in names(data_validation_srise %>% select(-semaine))){
-                p <- p %>% 
-                  e_area_(name, stack = "grp")
-              }
-              p  <- p |>
-                echarts4r::e_tooltip(formatter = htmlwidgets::JS(
-                  'function(params) {
+for(name in names(data_validation_srise %>% select(-date))){
+  p <- p %>% 
+    e_area_(name, stack = "grp")
+}
+p  <- p |>
+  echarts4r::e_tooltip(formatter = htmlwidgets::JS(
+    'function(params) {
                     let seriesName = params.seriesName || "";
                     let value0 = params.value[0] === null ? "" : params.value[0];
                     let value1 = params.value[1] === null ? "" : params.value[1];
                     return seriesName + " : " + value0 + " : " + value1;
                   }'
-                ))  %>% 
-                e_color(color = colour)
-              p
+  ))  %>% 
+  e_color(color = colour)
+p
+
 
     })
   })
