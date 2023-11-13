@@ -48,7 +48,15 @@ mod_suivi_collecte_ui <- function(id){
       bs4Dash::box(
           title = "Questionnaires collectés",
           status = "orange",
-          pickerInput(
+          shinyWidgets::awesomeRadio(
+            inputId = ns("map_choice_absolu_relatif"),
+            label = "Choix de l'affichage", 
+            choices = c("En nombre de questionnaires", "Selon le taux d'avancement"),
+            selected = "En nombre de questionnaires",
+            inline = TRUE,
+            status = "success"
+          ),
+           shinyWidgets::pickerInput(
             inputId = ns("region_picker"),
             label = NULL,
             choices = NULL,
@@ -244,15 +252,36 @@ mod_suivi_collecte_server <- function(id, r){
         mutate(REP_LIB_REG_1 = stringr::str_to_title(REP_LIB_REG_1), REP_LIB_DEPT_1 = stringr::str_to_title(REP_LIB_DEPT_1)) %>% 
         mutate(jour_remontee = as.Date(as.POSIXct(DATE_REMONTEE, format = "%Y-%m-%d %H:%M:%OS"))) %>%
         filter(!is.na(jour_remontee)) 
+      
+
+
 if (is.null(input$region_picker) || input$region_picker == "" || input$region_picker == "France"){
   questionnaire_par_jour_grp <- questionnaire_par_jour %>% 
     group_by(REP_LIB_REG_1) %>% 
-    count(jour_remontee) %>%
+    count(jour_remontee) 
+    
+    if(input$map_choice_absolu_relatif == "En nombre de questionnaires"){
+  questionnaire_par_jour_grp <- questionnaire_par_jour %>% 
     pivot_wider(names_from = REP_LIB_REG_1, values_from = n, values_fill =0) %>% 
     arrange(jour_remontee) %>%
     mutate(across(where(is.numeric), ~ cumsum(.))) %>% 
     janitor::adorn_totals("col", name="France")
   
+    }else{
+    nb_france <-  r$data_suivi %>% 
+        group_by(REP_LIB_REG_1) %>% 
+        count() %>%
+        ungroup() %>%
+        janitor::adorn_totals("col", name="France")
+    questionnaire_par_jour_grp <- questionnaire_par_jour_grp %>%
+
+
+
+
+  }
+
+
+
   nb_jour_collecte = as.Date(as.POSIXct("2024-03-01", format = "%Y-%m-%d")) - as.Date(as.POSIXct("2023-10-03" , format = "%Y-%m-%d"))
   questionnaire_a_collecter_chaque_jour <- nrow(r$data_suivi) /as.numeric(nb_jour_collecte)
   
