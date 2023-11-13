@@ -121,7 +121,8 @@ mod_suivi_accept_server <- function(id, r){
         nom_region <- stringr::str_to_title(nom_region)
         updatePickerInput(session, inputId = "region_picker", choices = nom_region)    
 
-        nom_departement <- unique(r$data_suivi %>% arrange(REP_LIB_DEPT_1) %>% pull(REP_LIB_DEPT_1))
+        nom_departement <- unique(r$data_suivi %>% 
+                                            filter(!is.na(REP_LIB_DEPT_1))%>% arrange(REP_LIB_DEPT_1) %>% pull(REP_LIB_DEPT_1))
           nom_departement <- stringr::str_to_title(nom_departement)
           updatePickerInput(session, inputId = "departement_picker", choices = nom_departement)
     })
@@ -134,6 +135,7 @@ mod_suivi_accept_server <- function(id, r){
         updatePickerInput(session, inputId = "region_picker", choices = nom_region, selected = input$region_picker) 
           nom_departement <- unique(r$data_suivi %>% 
                                             filter(REP_LIB_REG_1 == stringr::str_to_upper(input$region_picker)) %>% 
+                                            filter(!is.na(REP_LIB_DEPT_1))%>% 
                                             arrange(REP_LIB_DEPT_1)%>% 
                                             pull(REP_LIB_DEPT_1))
           nom_departement <- stringr::str_to_title(nom_departement)
@@ -175,11 +177,11 @@ mod_suivi_accept_server <- function(id, r){
     output$pie_questionnaire_par_etat <- renderEcharts4r({
        dossier <- r$data_suivi
        dossier_accept <- dossier %>%
-         filter(!is.na(ACCEPT)) %>% 
+          filter(!is.na(ACCEPT)) %>% 
             mutate(etat_accept = 
                 case_when(
                   ACCEPT == "1" & CESSATION == "1" ~ "Cessation",
-                  ACCEPT == "1" ~ "Accept = 1, hors Cessation",
+                  ACCEPT == "1" ~ "Répondu (hors cessation)",
                   ACCEPT %in% c("2", "3")~ "Injoignable ou impossibilité de repondre",
                   ACCEPT ==  "9"  ~ "Refus",
                 )
@@ -188,8 +190,13 @@ mod_suivi_accept_server <- function(id, r){
         count() %>% 
         ungroup()
 
+factor_level_accept <- c("Répondu (hors cessation)", "Cessation","Injoignable ou impossibilité de repondre", "Refus")
 
-df_colours <- data.frame(etat_accept = c("Accept = 1, hors Cessation", "Cessation","Injoignable ou impossibilité de repondre", "Refus" ),
+dossier_accept$etat_accept = factor(dossier_accept$etat_accept, levels = factor_level_accept, ordered = TRUE)
+dossier_accept <- dossier_accept %>%
+  arrange(match(etat_accept, factor_level_accept))
+
+df_colours <- data.frame(etat_accept = factor_level_accept,
                          colours = c("#5470c6", "#73c0de", "#fac858", "#E8465B"))
 colour <- df_colours %>%
   filter(etat_accept %in% dossier_accept$etat_accept) %>%
@@ -217,7 +224,7 @@ dossier_accept %>%
                   mutate(etat_accept = 
                       case_when(
                         ACCEPT == "1" & CESSATION == "1" ~ "Cessation",
-                        ACCEPT == "1" ~ "Accept = 1, hors Cessation",
+                        ACCEPT == "1" ~ "Répondu (hors cessation)",
                         ACCEPT %in% c("2", "3")~ "Injoignable ou impossibilité de repondre",
                         ACCEPT ==  "9"  ~ "Refus",
                       )
@@ -226,8 +233,15 @@ dossier_accept %>%
               count() %>% 
               ungroup()
 
+      
+      factor_level_accept <- c("Répondu (hors cessation)", "Cessation","Injoignable ou impossibilité de repondre", "Refus")
 
-      df_colours <- data.frame(etat_accept = c("Accept = 1, hors Cessation", "Cessation","Injoignable ou impossibilité de repondre", "Refus" ),
+      dossier_accept$etat_accept = factor(dossier_accept$etat_accept, levels = factor_level_accept, ordered = TRUE)
+      dossier_accept <- dossier_accept %>%
+        arrange(match(etat_accept, factor_level_accept))
+
+
+      df_colours <- data.frame(etat_accept = c("Répondu (hors cessation)", "Cessation","Injoignable ou impossibilité de repondre", "Refus" ),
                               colours = c("#5470c6", "#73c0de", "#fac858", "#E8465B"))
       colour <- df_colours %>%
         filter(etat_accept %in% dossier_accept$etat_accept) %>%
@@ -277,17 +291,20 @@ dossier_accept %>%
           
         data_carte_rond_proportionnel <-  r$map_regions_centroid  %>% 
           left_join(dossiers, by = c("REG" = "REP_CODE_REG_1")) 
+        adaptation_rond = 1
+
     }else{
         dossiers <- r$data_suivi %>%
           filter(ACCEPT != "1") %>% 
            count(REP_CODE_DEPT_1, REP_LIB_DEPT_1)%>% 
           mutate(REP_LIB_DEPT_1 = stringr::str_to_title(REP_LIB_DEPT_1))%>% 
-          mutate(REP_CODE_DEPT_1 = as.numeric(REP_CODE_DEPT_1)) 
+          filter(!is.na(REP_CODE_DEPT_1))%>%
+          mutate(REP_CODE_DEPT_1 = as.character(REP_CODE_DEPT_1)) 
           
         data_carte_rond_proportionnel <-  r$map_departements_centroid  %>% 
-          left_join(dossiers, by = c("REG" = "REP_CODE_DEPT_1")) %>% 
+          left_join(dossiers, by = c("DEP" = "REP_CODE_DEPT_1")) %>% 
           rename(Name = Nom)
-
+         adaptation_rond = 2
     }
  
          leaflet::leafletProxy(ns("map_nb_questionnaire_non_accept"), data = data_carte_rond_proportionnel) %>%
@@ -298,7 +315,7 @@ dossier_accept %>%
             leaflet::addCircleMarkers(
               lng = ~centroid_longitude,
               lat = ~centroid_latitude,
-              radius = ~ n,
+              radius = ~ adaptation_rond * n,
               fillOpacity = ~ifelse(is.na(n), 0, 0.8),
               color = "#e91f1fb6",
               stroke = FALSE,
@@ -319,7 +336,7 @@ dossier_accept %>%
                   mutate(etat_accept = 
                       case_when(
                         ACCEPT == "1" & CESSATION == "1" ~ "Cessation",
-                        ACCEPT == "1" ~ "Accept = 1, hors Cessation",
+                        ACCEPT == "1" ~ "Répondu (hors cessation)",
                         ACCEPT %in% c("2", "3")~ "Injoignable ou impossibilité de repondre",
                         ACCEPT ==  "9"  ~ "Refus",
                       )
@@ -327,9 +344,15 @@ dossier_accept %>%
               group_by(etat_accept) %>% 
               count() %>% 
               ungroup()
+      
+      factor_level_accept <- c("Répondu (hors cessation)", "Cessation","Injoignable ou impossibilité de repondre", "Refus")
+
+      dossier_accept$etat_accept = factor(dossier_accept$etat_accept, levels = factor_level_accept, ordered = TRUE)
+      dossier_accept <- dossier_accept %>%
+        arrange(match(etat_accept, factor_level_accept))
 
       if (nrow(dossier_accept) > 0){
-      df_colours <- data.frame(etat_accept = c("Accept = 1, hors Cessation", "Cessation","Injoignable ou impossibilité de repondre", "Refus" ),
+      df_colours <- data.frame(etat_accept = c("Répondu (hors cessation)", "Cessation","Injoignable ou impossibilité de repondre", "Refus" ),
                               colours = c("#5470c6", "#73c0de", "#fac858", "#E8465B"))
       colour <- df_colours %>%
         filter(etat_accept %in% dossier_accept$etat_accept) %>%
@@ -359,7 +382,7 @@ dossier_accept %>%
               filter(CODE_ENQUETEUR %in% liste_enqueteur) %>% 
             mutate(etat_accept = 
                 case_when(
-                  ACCEPT == "1" ~ "Accept = 1, hors Cessation",
+                  ACCEPT == "1" ~ "Répondu (hors cessation)",
                   ACCEPT %in% c("2", "3")~ "Injoignable ou impossibilité de repondre",
                   ACCEPT ==  "9"  ~ "Refus",
                 )
@@ -375,8 +398,8 @@ dossier_accept %>%
             chart_enq <- nbdossier_enqueteur %>%
               echarts4r::e_charts(Enquêteur) 
 
-            if ("Accept = 1, hors Cessation" %in% names(nbdossier_enqueteur)) {
-                chart_enq <- chart_enq %>% echarts4r::e_bar_("Accept = 1, hors Cessation", stack = "grp", color="#5470c6") 
+            if ("Répondu (hors cessation)" %in% names(nbdossier_enqueteur)) {
+                chart_enq <- chart_enq %>% echarts4r::e_bar_("Répondu (hors cessation)", stack = "grp", color="#5470c6") 
             } 
 
             if ("Injoignable ou impossibilité de repondre" %in% names(nbdossier_enqueteur)) {

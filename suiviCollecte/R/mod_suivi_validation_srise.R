@@ -58,7 +58,8 @@ mod_suivi_validation_srise_server <- function(id, r){
         nom_region <- stringr::str_to_title(nom_region)
         updatePickerInput(session, inputId = "region_picker", choices = nom_region)    
 
-        nom_departement <- c("Tous",unique(r$data_suivi %>% arrange(REP_LIB_DEPT_1) %>% pull(REP_LIB_DEPT_1)))
+        nom_departement <- c("Tous",unique(r$data_suivi %>% arrange(REP_LIB_DEPT_1)%>% 
+                                            filter(!is.na(REP_LIB_DEPT_1)) %>% pull(REP_LIB_DEPT_1)))
           nom_departement <- stringr::str_to_title(nom_departement)
           updatePickerInput(session, inputId = "departement_picker", choices = nom_departement)
     })
@@ -70,7 +71,8 @@ mod_suivi_validation_srise_server <- function(id, r){
         nom_region <- stringr::str_to_title(nom_region)
         updatePickerInput(session, inputId = "region_picker", choices = nom_region, selected = input$region_picker) 
           nom_departement <- c("Tous", unique(r$data_suivi %>% 
-                                            filter(REP_LIB_REG_1 == stringr::str_to_upper(input$region_picker)) %>% 
+                                            filter(REP_LIB_REG_1 == stringr::str_to_upper(input$region_picker))%>% 
+                                            filter(!is.na(REP_LIB_DEPT_1)) %>% 
                                             arrange(REP_LIB_DEPT_1)%>% 
                                             pull(REP_LIB_DEPT_1)))
           nom_departement <- stringr::str_to_title(nom_departement)
@@ -102,7 +104,8 @@ mod_suivi_validation_srise_server <- function(id, r){
                 pivot_wider(names_from = etat, values_from = nb) %>% 
                 group_by(semaine) %>% 
                 summarise(across(is.numeric,~sum(., na.rm= TRUE))) %>% 
-                ungroup() 
+                ungroup() %>%
+                mutate(semaine = stringr::str_remove(string = semaine, pattern = "SEM_"))
 
         new_names <- c(
                   "1 - Validé" = "1", "2 - Corrigé" = "2", "3 - Non validé" = "3", "4 - R4" = "4", "5 - R5" = "5", 

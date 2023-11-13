@@ -108,7 +108,8 @@ mod_suivi_collecte_server <- function(id, r){
         updatePickerInput(session, inputId = "region_picker", choices = nom_region)    
         updatePickerInput(session, inputId = "region_picker_enqueteur", choices = nom_region)    
 
-        nom_departement <-  unique(r$data_suivi %>% arrange(REP_LIB_DEPT_1) %>% pull(REP_LIB_DEPT_1))
+        nom_departement <-  unique(r$data_suivi %>% arrange(REP_LIB_DEPT_1) %>% 
+                                            filter(!is.na(REP_LIB_DEPT_1)) %>%  pull(REP_LIB_DEPT_1))
           nom_departement <- stringr::str_to_title(nom_departement)
           updatePickerInput(session, inputId = "dept_picker_enqueteur", choices = nom_departement)
     })
@@ -122,6 +123,7 @@ mod_suivi_collecte_server <- function(id, r){
 
       nom_departement <- unique(r$data_suivi %>% arrange(REP_LIB_DEPT_1) %>% 
                                             filter(REP_LIB_REG_1 == stringr::str_to_upper(input$region_picker)) %>% 
+                                            filter(!is.na(REP_LIB_DEPT_1)) %>% 
                                             pull(REP_LIB_DEPT_1))
           nom_departement <- stringr::str_to_title(nom_departement)
           updatePickerInput(session, inputId = "dept_picker_enqueteur", choices = nom_departement)
@@ -136,7 +138,8 @@ mod_suivi_collecte_server <- function(id, r){
       updatePickerInput(session, inputId = "region_picker", choices = nom_region, selected = input$region_picker_enqueteur) 
 
       nom_departement <- unique(r$data_suivi %>% arrange(REP_LIB_DEPT_1) %>%  
-                                            filter(REP_LIB_REG_1 == stringr::str_to_upper(input$region_picker_enqueteur)) %>% 
+                                            filter(REP_LIB_REG_1 == stringr::str_to_upper(input$region_picker_enqueteur))%>% 
+                                            filter(!is.na(REP_LIB_DEPT_1)) %>% 
                                             pull(REP_LIB_DEPT_1))
           nom_departement <- stringr::str_to_title(nom_departement)
           updatePickerInput(session, inputId = "dept_picker_enqueteur", choices = nom_departement)
@@ -318,7 +321,7 @@ p <- p %>%
   })
 
 
- #### Suivi dans le temps des questionnaires remontés
+ #### Suivi des enquêteurs
       output$histo_enqueteur <- renderEcharts4r({
         if (!is.null(input$region_picker) && input$region_picker != ""){
           if(!is.null(input$dept_picker_enqueteur) && input$dept_picker_enqueteur != ""){
@@ -326,19 +329,23 @@ p <- p %>%
             liste_enqueteur <- r$data_suivi %>% 
               filter(REP_LIB_DEPT_1 == stringr::str_to_upper(input$dept_picker_enqueteur)) %>% 
               filter(!is.na(CODE_ENQUETEUR)) %>% 
-              pull(CODE_ENQUETEUR)
-
+              pull(CODE_ENQUETEUR) %>%
+              unique()
+            print(stringr::str_to_upper(input$dept_picker_enqueteur))
+            print(liste_enqueteur)
             nbdossier_enqueteur <- r$data_suivi %>% 
-              filter(ETAT_CONTROLE!=1) %>% 
-              filter(CODE_ENQUETEUR %in% liste_enqueteur) %>% 
+              mutate(remonte = case_when(
+                  ETAT_CONTROLE!=1 ~ "Remontés",
+                  !is.na(ETAT_CONTROLE) ~ "A collecter"
+              ))%>%
+              filter(CODE_ENQUETEUR %in% liste_enqueteur) %>%
+              filter(REP_LIB_REG_1 == stringr::str_to_upper(input$region_picker)) %>% 
               group_by(CODE_ENQUETEUR,CODE_GEOGRAPHIQUE,NOM_ENQ,PRENOM_ENQ) %>% 
-              count() %>% 
+              count(remonte) %>% 
               ungroup() %>% 
-              left_join(r$nb_dossier, by = c("CODE_ENQUETEUR","CODE_GEOGRAPHIQUE")) %>% 
-              mutate("A collecter" = NBDOSSIER - n) %>% 
-              rename(Remontés = n) %>%
+              mutate() %>% 
+              pivot_wider(names_from = remonte, values_from = n) %>%
               mutate(Enquêteur = paste(NOM_ENQ, PRENOM_ENQ, sep = " ")) 
-              
 
             nbdossier_enqueteur %>%
               echarts4r::e_charts(Enquêteur) %>% 

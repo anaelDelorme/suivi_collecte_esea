@@ -60,7 +60,7 @@ mod_suivi_etat_ui <- function(id){
           echarts4rOutput(ns("pie_questionnaire_par_etat_par_region"))
       ),
       bs4Dash::box(
-          title = "Nombre de questionnaires à corriger ou à confirmer",
+          title = "Nombre de questionnaires à corriger ou à compléter",
           status = "indigo",
           shinyWidgets::awesomeRadio(
             inputId = ns("map_choice_region_departement"),
@@ -121,7 +121,8 @@ mod_suivi_etat_server <- function(id, r){
         nom_region <- stringr::str_to_title(nom_region)
         updatePickerInput(session, inputId = "region_picker", choices = nom_region)    
 
-        nom_departement <- unique(r$data_suivi %>% arrange(REP_LIB_DEPT_1) %>% pull(REP_LIB_DEPT_1))
+        nom_departement <- unique(r$data_suivi %>% arrange(REP_LIB_DEPT_1) %>% 
+                                            filter(!is.na(REP_LIB_DEPT_1)) %>% pull(REP_LIB_DEPT_1))
           nom_departement <- stringr::str_to_title(nom_departement)
           updatePickerInput(session, inputId = "departement_picker", choices = nom_departement)
     })
@@ -134,6 +135,7 @@ mod_suivi_etat_server <- function(id, r){
         updatePickerInput(session, inputId = "region_picker", choices = nom_region, selected = input$region_picker) 
           nom_departement <- unique(r$data_suivi %>% 
                                             filter(REP_LIB_REG_1 == stringr::str_to_upper(input$region_picker)) %>% 
+                                            filter(!is.na(REP_LIB_DEPT_1)) %>% 
                                             arrange(REP_LIB_DEPT_1)%>% 
                                             pull(REP_LIB_DEPT_1))
           nom_departement <- stringr::str_to_title(nom_departement)
@@ -178,19 +180,24 @@ mod_suivi_etat_server <- function(id, r){
          filter(!is.na(ETAT_CONTROLE)) %>% 
             mutate(etat_etat = 
                 case_when(
-                  ETAT_CONTROLE == "5" ~ "Validé",
-                  ETAT_CONTROLE == "4" ~ "A confirmer",
-                  ETAT_CONTROLE == "2"~ "A compléter",
-                  ETAT_CONTROLE ==  "3"  ~ "A corriger",
+                  ETAT_CONTROLE == 5 ~ "Validé",
+                  ETAT_CONTROLE == 4 ~ "A confirmer",
+                  ETAT_CONTROLE == 2 ~ "A compléter",
+                  ETAT_CONTROLE ==  3  ~ "A corriger"
                 )
         ) %>% 
         group_by(etat_etat) %>% 
         count() %>% 
         ungroup()
 
+factor_level_etat <- c("A corriger", "A compléter","A confirmer",  "Validé")
 
-df_colours <- data.frame(etat_etat = c("A compléter", "A confirmer", "A corriger","Validé" ),
-                         colours = c( "#fac858","#EE81A2", "#E8465B","#31a859"))
+dossier_etat$etat_etat = factor(dossier_etat$etat_etat, levels = factor_level_etat, ordered = TRUE)
+dossier_etat <- dossier_etat %>%
+  arrange(match(etat_etat, factor_level_etat))
+
+df_colours <- data.frame(etat_etat = factor_level_etat,
+                         colours = c( "#BF3D3D","pink", "#F29429","#02735E"))
 colour <- df_colours %>%
   filter(etat_etat %in% dossier_etat$etat_etat) %>%
   select(colours) %>%
@@ -217,19 +224,24 @@ dossier_etat %>%
               filter(!is.na(ETAT_CONTROLE)) %>% 
                    mutate(etat_etat = 
                 case_when(
-                  ETAT_CONTROLE == "5" ~ "Validé",
-                  ETAT_CONTROLE == "4" ~ "A confirmer",
-                  ETAT_CONTROLE == "2"~ "A compléter",
-                  ETAT_CONTROLE ==  "3"  ~ "A corriger",
+                  ETAT_CONTROLE == 5 ~ "Validé",
+                  ETAT_CONTROLE == 4 ~ "A confirmer",
+                  ETAT_CONTROLE == 2 ~ "A compléter",
+                  ETAT_CONTROLE ==  3  ~ "A corriger"
                 )
         ) %>% 
         group_by(etat_etat) %>% 
         count() %>% 
         ungroup()
 
+factor_level_etat <- c("A corriger", "A compléter","A confirmer",  "Validé")
 
-df_colours <- data.frame(etat_etat = c("A compléter", "A confirmer", "A corriger","Validé" ),
-                         colours = c( "#fac858","#EE81A2", "#E8465B","#31a859"))
+dossier_etat$etat_etat = factor(dossier_etat$etat_etat, levels = factor_level_etat, ordered = TRUE)
+dossier_etat <- dossier_etat %>%
+  arrange(match(etat_etat, factor_level_etat))
+
+df_colours <- data.frame(etat_etat = factor_level_etat,
+                         colours = c( "#BF3D3D","pink", "#F29429","#02735e"))
       colour <- df_colours %>%
         filter(etat_etat %in% dossier_etat$etat_etat) %>%
         select(colours) %>%
@@ -247,7 +259,8 @@ df_colours <- data.frame(etat_etat = c("A compléter", "A confirmer", "A corrige
 ### Carte régionale 
  output$map_nb_questionnaire_non_etat <- renderLeaflet({
     dossiers <- r$data_suivi %>%
-          filter(ETAT_CONTROLE %in% c("3", "4")) %>% 
+          filter(!is.na(ETAT_CONTROLE)) %>% 
+          filter(ETAT_CONTROLE %in% c(3, 2)) %>% 
           count(REP_CODE_REG_1, REP_LIB_REG_1)%>% 
           mutate(REP_LIB_REG_1 = stringr::str_to_title(REP_LIB_REG_1))%>% 
           mutate(REP_CODE_REG_1 = as.numeric(REP_CODE_REG_1)) 
@@ -275,7 +288,7 @@ df_colours <- data.frame(etat_etat = c("A compléter", "A confirmer", "A corrige
     {
     if(input$map_choice_region_departement == "Région"){
         dossiers <- r$data_suivi %>%
-          filter(ETAT_CONTROLE %in% c("3","4")) %>% 
+          filter(ETAT_CONTROLE %in% c(2, 3)) %>% 
           count(REP_CODE_REG_1, REP_LIB_REG_1)%>% 
           mutate(REP_LIB_REG_1 = stringr::str_to_title(REP_LIB_REG_1))%>% 
           mutate(REP_CODE_REG_1 = as.numeric(REP_CODE_REG_1)) 
@@ -284,20 +297,22 @@ df_colours <- data.frame(etat_etat = c("A compléter", "A confirmer", "A corrige
           left_join(dossiers, by = c("REG" = "REP_CODE_REG_1")) 
 
           max_n = max(data_carte_rond_proportionnel$n, na.rm = TRUE)
-        taille_rond= 50/max_n
+        taille_rond= 25/max_n
     }else{
         dossiers <- r$data_suivi %>%
-          filter(ETAT_CONTROLE %in% c("3","4"))  %>% 
+          filter(ETAT_CONTROLE %in% c(2, 3))  %>% 
            count(REP_CODE_DEPT_1, REP_LIB_DEPT_1)%>% 
-          mutate(REP_LIB_DEPT_1 = stringr::str_to_title(REP_LIB_DEPT_1))%>% 
-          mutate(REP_CODE_DEPT_1 = as.numeric(REP_CODE_DEPT_1)) 
-          
+          mutate(REP_LIB_DEPT_1 = stringr::str_to_title(REP_LIB_DEPT_1)) %>% 
+          filter(!is.na(REP_LIB_DEPT_1)) %>%
+          mutate(REP_CODE_DEPT_1 = as.character(REP_CODE_DEPT_1)) 
+     # View(dossiers)
+     # View(r$map_departements_centroid)
         data_carte_rond_proportionnel <-  r$map_departements_centroid  %>% 
-          left_join(dossiers, by = c("REG" = "REP_CODE_DEPT_1")) %>% 
+          left_join(dossiers, by = c("DEP" = "REP_CODE_DEPT_1")) %>% 
           rename(Name = Nom)
 
         max_n = max(data_carte_rond_proportionnel$n, na.rm = TRUE)
-        taille_rond= 10/max_n
+        taille_rond= 20/max_n
     }
         #print(data_carte_rond_proportionnel)
          leaflet::leafletProxy(ns("map_nb_questionnaire_non_etat"), data = data_carte_rond_proportionnel) %>%
@@ -328,19 +343,25 @@ df_colours <- data.frame(etat_etat = c("A compléter", "A confirmer", "A corrige
               filter(!is.na(ETAT_CONTROLE)) %>% 
                   mutate(etat_etat = 
                 case_when(
-                  ETAT_CONTROLE == "5" ~ "Validé",
-                  ETAT_CONTROLE == "4" ~ "A confirmer",
-                  ETAT_CONTROLE == "2"~ "A compléter",
-                  ETAT_CONTROLE ==  "3"  ~ "A corriger",
+                  ETAT_CONTROLE == 5 ~ "Validé",
+                  ETAT_CONTROLE == 4 ~ "A confirmer",
+                  ETAT_CONTROLE == 2 ~ "A compléter",
+                  ETAT_CONTROLE ==  3  ~ "A corriger"
                 )
         ) %>% 
               group_by(etat_etat) %>% 
               count() %>% 
               ungroup()
+factor_level_etat <- c("A corriger", "A compléter","A confirmer",  "Validé")
+
+dossier_etat$etat_etat = factor(dossier_etat$etat_etat, levels = factor_level_etat, ordered = TRUE)
+dossier_etat <- dossier_etat %>%
+  arrange(match(etat_etat, factor_level_etat))
+
 
       if (nrow(dossier_etat) > 0){
-df_colours <- data.frame(etat_etat = c("A compléter", "A confirmer", "A corriger","Validé" ),
-                         colours = c( "#fac858","#EE81A2", "#E8465B","#31a859"))
+df_colours <- data.frame(etat_etat = factor_level_etat,
+                         colours = c( "#BF3D3D","pink", "#F29429","#02735E"))
       colour <- df_colours %>%
         filter(etat_etat %in% dossier_etat$etat_etat) %>%
         select(colours) %>%
@@ -372,10 +393,10 @@ df_colours <- data.frame(etat_etat = c("A compléter", "A confirmer", "A corrige
               filter(CODE_ENQUETEUR %in% liste_enqueteur) %>% 
                   mutate(etat_etat = 
                 case_when(
-                  ETAT_CONTROLE == "5" ~ "Validé",
-                  ETAT_CONTROLE == "4" ~ "A confirmer",
-                  ETAT_CONTROLE == "2"~ "A compléter",
-                  ETAT_CONTROLE ==  "3"  ~ "A corriger",
+                  ETAT_CONTROLE == 5 ~ "Validé",
+                  ETAT_CONTROLE == 4 ~ "A confirmer",
+                  ETAT_CONTROLE == 2 ~ "A compléter",
+                  ETAT_CONTROLE == 3  ~ "A corriger"
                 )
         ) %>% 
               group_by(CODE_ENQUETEUR,etat_etat,NOM_ENQ,PRENOM_ENQ) %>% 
@@ -389,21 +410,20 @@ df_colours <- data.frame(etat_etat = c("A compléter", "A confirmer", "A corrige
             chart_enq <- nbdossier_enqueteur %>%
               echarts4r::e_charts(Enquêteur) 
 
-
             if ("A corriger" %in% names(nbdossier_enqueteur)) {
-                chart_enq <- chart_enq %>% echarts4r::e_bar_("A corriger", stack = "grp", color = "#E8465B") 
+                chart_enq <- chart_enq %>% echarts4r::e_bar_("A corriger", stack = "grp", color = "#BF3D3D") 
             }  
 
-            if ("A confirmer" %in% names(nbdossier_enqueteur)) {
-                chart_enq <- chart_enq %>% echarts4r::e_bar_("A confirmer", stack = "grp", color="#EE81A2")
+            if ("A compléter" %in% names(nbdossier_enqueteur)) {
+                chart_enq <- chart_enq %>% echarts4r::e_bar_("A compléter", stack = "grp", color="pink")
             } 
 
-            if ("A compléter" %in% names(nbdossier_enqueteur)) {
-                chart_enq <- chart_enq %>% echarts4r::e_bar_("A compléter", stack = "grp", color = "#fac858") 
+            if ("A confirmer" %in% names(nbdossier_enqueteur)) {
+                chart_enq <- chart_enq %>% echarts4r::e_bar_("A confirmer", stack = "grp", color = "#F29429") 
             } 
             
             if ("Validé" %in% names(nbdossier_enqueteur)) {
-                chart_enq <- chart_enq %>% echarts4r::e_bar_("Validé", stack = "grp", color="#31a859") 
+                chart_enq <- chart_enq %>% echarts4r::e_bar_("Validé", stack = "grp", color="#02735E") 
             } 
 
             

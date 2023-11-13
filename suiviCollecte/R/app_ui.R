@@ -40,10 +40,10 @@ app_ui <- function(request) {
           # pour chaque page à afficher mettre un menuItem avec le libellé affiché
           # le tabName qui fait le lien avec l'affichage dans le body
           # le logo
-          bs4Dash::menuItem("Suivi Collecte", tabName = "suiviCollecte", icon = icon("globe")),
-          bs4Dash::menuItem("Suivi Accept", tabName = "suiviAccept", icon = icon("square-check")),
-          bs4Dash::menuItem("Suivi Etat", tabName = "suiviEtat", icon = icon("list-check")),
-          bs4Dash::menuItem("Suivi Validation Srise", tabName = "suiviValidationSrise", icon = icon("check"))
+          bs4Dash::menuItem("Avancement de la collecte", tabName = "suiviCollecte", icon = icon("globe")),
+          bs4Dash::menuItem("Contact Répondant", tabName = "suiviAccept", icon = icon("square-check")),
+          bs4Dash::menuItem("Etat Questionnaire", tabName = "suiviEtat", icon = icon("list-check")),
+          bs4Dash::menuItem("Validation Srise", tabName = "suiviValidationSrise", icon = icon("check"))
         ),
         #img(src = "www/logo_tfc.png", width = 40, height = 40)
         tags$style(HTML(".centered-image { display: flex; justify-content: center; align-items: center; }")),
