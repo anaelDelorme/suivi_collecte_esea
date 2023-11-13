@@ -87,9 +87,7 @@ mod_suivi_collecte_ui <- function(id){
           ),
           echarts4rOutput(ns("histo_enqueteur")),
           br(),
-          p("Choisir un département pour afficher le graphique."),
-          p("Note : tous les enquêteurs intervenant dans le département sélectionné sont présentés ici. Le nombre de questionnaires indiqué est lié à l'enquêteur pour tous les départements où il intervient.")
-      )
+          p("Choisir un département pour afficher le graphique."))
     )    
   )
 }
@@ -331,8 +329,6 @@ p <- p %>%
               filter(!is.na(CODE_ENQUETEUR)) %>% 
               pull(CODE_ENQUETEUR) %>%
               unique()
-            print(stringr::str_to_upper(input$dept_picker_enqueteur))
-            print(liste_enqueteur)
             nbdossier_enqueteur <- r$data_suivi %>% 
               mutate(remonte = case_when(
                   ETAT_CONTROLE!=1 ~ "Remontés",
@@ -340,6 +336,7 @@ p <- p %>%
               ))%>%
               filter(CODE_ENQUETEUR %in% liste_enqueteur) %>%
               filter(REP_LIB_REG_1 == stringr::str_to_upper(input$region_picker)) %>% 
+              filter(REP_LIB_DEPT_1 == stringr::str_to_upper(input$dept_picker_enqueteur)) %>% 
               group_by(CODE_ENQUETEUR,CODE_GEOGRAPHIQUE,NOM_ENQ,PRENOM_ENQ) %>% 
               count(remonte) %>% 
               ungroup() %>% 
