@@ -382,7 +382,7 @@ dossier_accept %>%
               filter(CODE_ENQUETEUR %in% liste_enqueteur) %>% 
             mutate(etat_accept = 
                 case_when(
-                  ACCEPT == "1" ~ "Répondu (hors cessation)",
+                  ACCEPT == "1" ~ "Répondu (tous)",
                   ACCEPT %in% c("2", "3")~ "Injoignable ou impossibilité de repondre",
                   ACCEPT ==  "9"  ~ "Refus",
                 )
@@ -398,8 +398,8 @@ dossier_accept %>%
             chart_enq <- nbdossier_enqueteur %>%
               echarts4r::e_charts(Enquêteur) 
 
-            if ("Répondu (hors cessation)" %in% names(nbdossier_enqueteur)) {
-                chart_enq <- chart_enq %>% echarts4r::e_bar_("Répondu (hors cessation)", stack = "grp", color="#5470c6") 
+            if ("Répondu (tous)" %in% names(nbdossier_enqueteur)) {
+                chart_enq <- chart_enq %>% echarts4r::e_bar_("Répondu (tous)", stack = "grp", color="#5470c6") 
             } 
 
             if ("Injoignable ou impossibilité de repondre" %in% names(nbdossier_enqueteur)) {

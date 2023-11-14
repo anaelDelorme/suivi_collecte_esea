@@ -386,11 +386,13 @@ df_colours <- data.frame(etat_etat = factor_level_etat,
             liste_enqueteur <- r$data_suivi %>% 
               filter(REP_LIB_DEPT_1 == stringr::str_to_upper(input$departement_picker)) %>% 
               filter(!is.na(CODE_ENQUETEUR)) %>% 
+              filter(ETAT_CONTROLE %in% c(2, 3, 4, 5)) %>%
               pull(CODE_ENQUETEUR)
             #print(liste_enqueteur)
 
             nbdossier_enqueteur <- r$data_suivi %>% 
               filter(CODE_ENQUETEUR %in% liste_enqueteur) %>% 
+              filter(REP_LIB_DEPT_1 == stringr::str_to_upper(input$departement_picker)) %>% 
                   mutate(etat_etat = 
                 case_when(
                   ETAT_CONTROLE == 5 ~ "Validé",

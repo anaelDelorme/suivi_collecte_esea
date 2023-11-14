@@ -139,14 +139,8 @@ for(name in names(data_validation_srise %>% select(-date))){
     e_area_(name, stack = "grp")
 }
 p  <- p |>
-  echarts4r::e_tooltip(formatter = htmlwidgets::JS(
-    'function(params) {
-                    let seriesName = params.seriesName || "";
-                    let value0 = params.value[0] === null ? "" : params.value[0];
-                    let value1 = params.value[1] === null ? "" : params.value[1];
-                    return seriesName + " : " + value0 + " : " + value1;
-                  }'
-  ))  %>% 
+  e_tooltip(trigger = "axis", 
+            axis_pointer_type = "cross") %>%
   e_color(color = colour)
 p
 
