@@ -51,21 +51,36 @@ app_ui <- function(request) {
 
          
           bs4Card(
-       title = span(
-    icon("lightbulb", class = "mr-1"), # Icône d'ampoule
-    "Astuce"
-  ), 
-       closable = TRUE, 
-       width = 12,
-       status = "primary", 
-       solidHeader = FALSE, 
-       collapsible = TRUE,
-       labelText = 1,
-       labelStatus = "primary",
-       labelTooltip = "Hi Bro!",
-       p("Dans un graphique, vous pouvez effacer une série en cliquant sur sa représentation dans la légende.")
-      )
-     ),
+              title = span(
+                icon("lightbulb", class = "mr-1"), # Icône d'ampoule
+                 "Astuce"
+              ), 
+              closable = TRUE, 
+              width = 12,
+              status = "primary", 
+              solidHeader = FALSE, 
+              collapsible = TRUE,
+              labelText = 1,
+              labelStatus = "primary",
+              p("Dans un graphique, vous pouvez effacer une série en cliquant sur sa représentation dans la légende.")
+              ),
+        br(),
+         
+          bs4Card(
+              title = span(
+                icon("lightbulb", class = "mr-1"), # Icône d'ampoule
+                 "Astuce"
+              ), 
+              closable = TRUE, 
+              width = 12,
+              status = "indigo", 
+              solidHeader = FALSE, 
+              collapsible = TRUE,
+              labelText = 1,
+              labelStatus = "indigo",
+              p("Dans un graphique, vous pouvez mettre en avant une courbe en passant la souris sur sa représentation dans la légende.")
+              )
+          ),
       # Ajout du body
       body = bs4Dash::dashboardBody(
         # liste des pages à afficher
