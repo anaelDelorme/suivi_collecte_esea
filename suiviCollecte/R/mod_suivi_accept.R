@@ -381,18 +381,20 @@ dossier_accept %>%
 
             nbdossier_enqueteur <- r$data_suivi %>% 
               filter(CODE_ENQUETEUR %in% liste_enqueteur) %>% 
-            mutate(etat_accept = 
-                case_when(
-                  ACCEPT == "1" ~ "Répondu (tous)",
-                  ACCEPT %in% c("2", "3")~ "Injoignable ou impossibilité de repondre",
-                  ACCEPT ==  "9"  ~ "Refus",
-                )
-        ) %>%  
-              group_by(CODE_ENQUETEUR,etat_accept,NOM_ENQ,PRENOM_ENQ) %>% 
-              count() %>% 
-              ungroup() %>% 
-              mutate(Enquêteur = paste(NOM_ENQ, PRENOM_ENQ, sep = " ")) %>%
-              tidyr::pivot_wider(names_from = etat_accept, values_from= n)
+              filter(REP_LIB_DEPT_1 == stringr::str_to_upper(input$departement_picker)) %>% 
+              filter(!is.na(CODE_ENQUETEUR)) %>% 
+                mutate(etat_accept = 
+                    case_when(
+                      ACCEPT == "1" ~ "Répondu (tous)",
+                      ACCEPT %in% c("2", "3")~ "Injoignable ou impossibilité de repondre",
+                      ACCEPT ==  "9"  ~ "Refus",
+                    )
+            ) %>%  
+                  group_by(CODE_ENQUETEUR,etat_accept,NOM_ENQ,PRENOM_ENQ) %>% 
+                  count() %>% 
+                  ungroup() %>% 
+                  mutate(Enquêteur = paste(NOM_ENQ, PRENOM_ENQ, sep = " ")) %>%
+                  tidyr::pivot_wider(names_from = etat_accept, values_from= n)
               
             #print(nbdossier_enqueteur) 
 
