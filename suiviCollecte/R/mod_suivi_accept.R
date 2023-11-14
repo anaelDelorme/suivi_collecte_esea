@@ -376,6 +376,7 @@ dossier_accept %>%
             liste_enqueteur <- r$data_suivi %>% 
               filter(REP_LIB_DEPT_1 == stringr::str_to_upper(input$departement_picker)) %>% 
               filter(!is.na(CODE_ENQUETEUR)) %>% 
+              filter(ACCEPT %in% c("1", "2", "3", "9")) %>% 
               pull(CODE_ENQUETEUR)
 
             nbdossier_enqueteur <- r$data_suivi %>% 
