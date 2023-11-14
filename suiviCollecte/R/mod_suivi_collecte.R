@@ -269,6 +269,7 @@ mod_suivi_collecte_server <- function(id, r){
 
               if (input$map_choice_absolu_relatif == "Selon le taux d'avancement") {
                 nb_france <-  r$data_suivi %>% 
+                  filter(!is.na(REP_CODE_DEPT_1)) %>%
                   mutate(REP_LIB_REG_1 = stringr::str_to_title(REP_LIB_REG_1), REP_LIB_DEPT_1 = stringr::str_to_title(REP_LIB_DEPT_1)) %>% 
                   group_by(REP_LIB_REG_1) %>% 
                   count() %>%
@@ -473,30 +474,6 @@ mod_suivi_collecte_server <- function(id, r){
                           e_line_(input$region_picker, name =paste0("Total ",input$region_picker), color = ma_palette[1]) %>% 
                           e_line(`Trajectoire estimée`, name =paste0("Trajectoire estimée ",input$region_picker), color = "#c527c5", lineStyle = list(type = "dashed"), symbol='none')
             }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
