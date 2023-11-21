@@ -22,12 +22,14 @@ Imports:
     htmlwidgets,
     janitor,
     leaflet,
+    lubridate,
     sf,
     shiny (>= 1.7.5.1),
     shinymanager,
     shinyWidgets,
     stringr,
     tidyr,
+    tidyverse,
     waiter
 Suggests: 
     knitr,

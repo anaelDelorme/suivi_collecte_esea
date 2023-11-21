@@ -24,6 +24,7 @@ golem::add_module(name = "suivi_collecte", with_test = TRUE) # Name of the modul
 golem::add_module(name = "suivi_accept", with_test = TRUE) # Name of the module
 golem::add_module(name = "suivi_etat", with_test = TRUE) # Name of the module
 golem::add_module(name = "suivi_validation_srise", with_test = TRUE) # Name of the module
+golem::add_module(name = "suivi_validation_suival", with_test = TRUE) # Name of the module
 
 ## Add helper functions ----
 ## Creates fct_* and utils_*

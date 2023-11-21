@@ -107,6 +107,13 @@ mod_suivi_collecte_server <- function(id, r){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
 
+    ### formatage des nombres
+    formatter_number <- function(value) {
+        nb <- prettyNum(value, decimal.mark = ",", big.mark = " ", scientific = FALSE)
+        return(nb)
+    }
+
+
     ### Liste des régions / départements
    observe({
         nom_region <- c("France", unique(r$data_suivi %>% arrange(REP_LIB_REG_1) %>% pull(REP_LIB_REG_1)))
@@ -164,14 +171,14 @@ mod_suivi_collecte_server <- function(id, r){
           fill = TRUE,
           gradient = TRUE,
           color = "info",
-          value = questionnaires_totaux_esea,
+          value = formatter_number(questionnaires_totaux_esea),
           icon = icon("paper-plane")
         )
       })
 
        output$taux_collecte <- renderValueBox({
         valueBox(
-          value = glue(round(100 *(questionnaires_collectes / questionnaires_totaux_esea),1), ' %'),
+          value = glue(formatter_number(round(100 *(questionnaires_collectes / questionnaires_totaux_esea),1)), ' %'),
           subtitle = "Taux de collecte (questionnaires qui ne sont plus en état initial)",
         color = "primary",
         icon = icon("circle-check")
@@ -180,7 +187,7 @@ mod_suivi_collecte_server <- function(id, r){
 
       output$taux_reponse <- renderValueBox({
         valueBox(
-          value = glue(round(100 *(questionnaires_valides / questionnaires_totaux_esea),1), ' %'),
+          value = glue(formatter_number(round(100 *(questionnaires_valides / questionnaires_totaux_esea),1)), ' %'),
           subtitle = "Taux de réponse (questionnaires validés)",
         color = "teal",
         icon = icon("thumbs-up")
@@ -237,7 +244,7 @@ mod_suivi_collecte_server <- function(id, r){
               fillColor = ~pal(taux_collecte),
               label = ~paste0(Name, ": ",
                               round(100 * taux_collecte,0),
-                              " % / ",Collecté," collectés pour ", total," au total.")) %>%
+                              " % / ",formatter_number(Collecté)," collectés pour ", formatter_number(total)," au total.")) %>%
               addLegend(pal = pal_inverse, values = ~round(100*taux_collecte,0), title = "Taux de collecte",
                     opacity = 1, position = "bottomright", na.label= "?",labFormat = labelFormat(suffix=" %", transform = function(x)  sort(x, decreasing = TRUE)))
 

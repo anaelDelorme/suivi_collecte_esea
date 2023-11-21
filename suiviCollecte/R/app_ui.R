@@ -43,7 +43,8 @@ app_ui <- function(request) {
           bs4Dash::menuItem("Avancement de la collecte", tabName = "suiviCollecte", icon = icon("globe")),
           bs4Dash::menuItem("Contact Répondant", tabName = "suiviAccept", icon = icon("square-check")),
           bs4Dash::menuItem("Etat Questionnaire", tabName = "suiviEtat", icon = icon("list-check")),
-          bs4Dash::menuItem("Validation Srise", tabName = "suiviValidationSrise", icon = icon("check"))
+          bs4Dash::menuItem("Validation Srise", tabName = "suiviValidationSrise", icon = icon("check")),
+          bs4Dash::menuItem("Validation Suival", tabName = "suiviValidationSuival", icon = icon("circle-check"))
         ),
         #img(src = "www/logo_tfc.png", width = 40, height = 40)
         tags$style(HTML(".centered-image { display: flex; justify-content: center; align-items: center; }")),
@@ -90,8 +91,8 @@ app_ui <- function(request) {
           bs4Dash::tabItem("suiviCollecte", mod_suivi_collecte_ui("suivi_collecte_1")),
           bs4Dash::tabItem("suiviAccept", mod_suivi_accept_ui("suivi_accept_1")),
           bs4Dash::tabItem("suiviEtat", mod_suivi_etat_ui("suivi_etat_1")),
-          bs4Dash::tabItem("suiviValidationSrise", mod_suivi_validation_srise_ui("suivi_validation_srise_1"))
-
+          bs4Dash::tabItem("suiviValidationSrise", mod_suivi_validation_srise_ui("suivi_validation_srise_1")),
+          bs4Dash::tabItem("suiviValidationSuival", mod_suivi_validation_suival_ui("suivi_validation_suival_1"))
         )
       ),
       # Ajout d'un footer avec un texte à gauche et à droite dans cet exemple.

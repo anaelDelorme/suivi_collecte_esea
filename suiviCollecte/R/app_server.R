@@ -31,12 +31,12 @@ app_server <- function(input, output, session) {
       opts = list("region" = "")
     )
 
-   # r$nb_dossier <- aws.s3::s3read_using(
-    #  FUN = arrow::read_parquet,
-     # object = "ESEA/NBDOSSIER.parquet",
-     # bucket = "projet-suivi-collecte-masa",
-     # opts = list("region" = "")
-    #)
+   r$tab_suival <- aws.s3::s3read_using(
+      FUN = arrow::read_parquet,
+      object = "ESEA/TAB_SUIVAL.parquet",
+      bucket = "projet-suivi-collecte-masa",
+      opts = list("region" = "")
+    )
 
     regions <- geojsonio::topojson_read("https://raw.githubusercontent.com/neocarto/resources/master/geometries/France/regions.topojson")
     r$map_regions <- regions
@@ -65,4 +65,5 @@ app_server <- function(input, output, session) {
   mod_suivi_accept_server("suivi_accept_1",r)
   mod_suivi_etat_server("suivi_etat_1",r)
   mod_suivi_validation_srise_server("suivi_validation_srise_1",r)
+  mod_suivi_validation_suival_server("suivi_validation_suival_1",r)
 }
