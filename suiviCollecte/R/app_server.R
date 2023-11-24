@@ -13,12 +13,13 @@ app_server <- function(input, output, session) {
       data.frame(
         user = c(Sys.getenv("LOGIN_SITE_1")), # mandatory
         password = c(Sys.getenv("MDP_SITE_1")), # mandatory
+        #user = c("id"), # mandatory
+        #password = c("id"), # mandatory
         admin = c(FALSE),
         stringsAsFactors = FALSE
       )
     )
   )
-
 
 
   r <- reactiveValues()
