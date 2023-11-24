@@ -44,7 +44,7 @@ mod_suivi_validation_suival_server <- function(id, r){
   moduleServer( id, function(input, output, session){
     ns <- session$ns
     observe({
-        nom_region <-  c("France",unique(r$tab_suival %>% arrange(REP_LIB_REG_C) %>%  pull(REP_LIB_REG_C)))
+        nom_region <-  c("France",unique(r$tab_suival %>% arrange(LIBREGION) %>%  pull(LIBREGION)))
         nom_region <- stringr::str_to_title(nom_region)
         updatePickerInput(session, inputId = "region_picker", choices = nom_region)    
     })
@@ -55,56 +55,42 @@ mod_suivi_validation_suival_server <- function(id, r){
             #print(dossier)
             if(!is.null(input$region_picker) && input$region_picker != "" && input$region_picker != "France"){
               dossier <- dossier %>%
-                    filter(REP_LIB_REG_C == stringr::str_to_upper(input$region_picker))
+                    filter(LIBREGION == stringr::str_to_upper(input$region_picker))
               
             }
             #print(dossier)
 
-             ETAT_ANOMALIE_RECOD = c('0' = "Non traité",
-                         '1' ="En cours",
-                         '2' ="Corrigée dans l'enquête",
-                         '3' ="Corrigée",
-                         '4' ='Forcée')
+             TAB_SUIVAL_FR<-dossier%>%
+                group_by(date) %>%
+                summarise(across(where(is.numeric), sum))
 
-            data_validation_suival <- dossier %>% 
-              select(starts_with("SUIV")) %>%
-              pivot_longer(cols=everything(),
-                          names_to="DATE",
-                          values_to ="ETAT_ANOMALIE" ) %>%
-                group_by(DATE,ETAT_ANOMALIE) %>%
-                summarise(nbdossier=n()) %>%
-                ungroup() %>%
-                mutate(ETAT_ANOMALIE=recode(ETAT_ANOMALIE,!!!ETAT_ANOMALIE_RECOD )) %>%
-                pivot_wider(names_from = ETAT_ANOMALIE,
-                            values_from=nbdossier) %>% 
-                # mis au format date via lubridate et la fonction dmy
-                mutate(DATE_SUIVAL=lubridate::dmy(substr(DATE,8,18)),.before = everything()) %>%
-                select(-DATE)
-            #print(data_validation_suival)
-            p <-  data_validation_suival %>%
-                e_charts(DATE_SUIVAL) 
+
+            
+            #print(TAB_SUIVAL_FR)
+            p <-  TAB_SUIVAL_FR%>%
+                    e_charts(date) 
                 
-              if ("Non traité" %in% names(data_validation_suival)){
+              if ("Non traité" %in% names(TAB_SUIVAL_FR)){
                 p <- p %>%
                   e_area_("Non traité", stack = "grp", color = "#E8465B")
               }   
 
-              if ("En cours" %in% names(data_validation_suival)){
+              if ("En cours" %in% names(TAB_SUIVAL_FR)){
                 p <- p %>%
                   e_area_("En cours", stack = "grp", color = "#FFF18A") 
               }
 
-              if ("Corrigée dans l'enquête" %in% names(data_validation_suival)){
+              if ("Corrigée_dans_enquête" %in% names(TAB_SUIVAL_FR)){
                 p <- p %>%
-                e_area_("Corrigée dans l'enquête", stack = "grp", color = "#725523")
+                e_area_("Corrigée_dans_enquête", name="Corrigée dans l'enquête", stack = "grp", color = "#725523")
               }
 
-              if ("Corrigée" %in% names(data_validation_suival)){
+              if ("Corrigée" %in% names(TAB_SUIVAL_FR)){
                 p <- p %>%
                 e_area_("Corrigée", stack = "grp", color = "#5470c6") 
               }
 
-              if ("Forcée" %in% names(data_validation_suival)){
+              if ("Forcée" %in% names(TAB_SUIVAL_FR)){
                 p <- p %>%
                 e_area_("Forcée", stack = "grp", color = "#58C74D")
               }
