@@ -14,6 +14,7 @@
 #' @import dplyr
 #' @import stringr
 #' @import tidyr
+#' @importFrom grDevices colours
 mod_suivi_etat_ui <- function(id){
   ns <- NS(id)
   tagList(

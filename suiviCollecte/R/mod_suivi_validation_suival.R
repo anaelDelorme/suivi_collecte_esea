@@ -13,6 +13,7 @@
 #' @import bs4Dash
 #' @import shinyWidgets
 #' @import echarts4r
+#' @importFrom grDevices colours
 mod_suivi_validation_suival_ui <- function(id){
   ns <- NS(id)
   tagList(fluidRow(

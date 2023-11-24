@@ -13,7 +13,7 @@
 #' @import dplyr
 #' @import stringr
 #' @import tidyr
-
+#' @importFrom grDevices colours
 mod_suivi_validation_srise_ui <- function(id){
   ns <- NS(id)
   tagList(

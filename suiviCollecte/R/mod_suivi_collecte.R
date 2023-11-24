@@ -21,7 +21,7 @@
 #' @import stringr
 #' @import shinyWidgets
 #' @import janitor
-
+#' @importFrom grDevices colours
 
 mod_suivi_collecte_ui <- function(id){
   ns <- NS(id)
